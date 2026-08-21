@@ -1,0 +1,58 @@
+# Risk-scoring rules used by the Risk Assessment Agent (via the
+# get_risk_rules tool). Each rule contributes points toward an overall
+# risk score (0-100) when its trigger keywords appear in the use case
+# description/documentation, or when a structured field matches.
+
+risk_rules:
+  - id: RISK-001
+    category: data_sensitivity
+    description: Processes sensitive personal data (health, biometric, financial, government ID, children's data).
+    weight: 25
+    trigger_keywords: [health, medical, biometric, financial, credit score, ssn, social security, government id, children, minors]
+
+  - id: RISK-002
+    category: autonomy
+    description: Operates with full autonomy and can take actions without human review.
+    weight: 25
+    trigger_keywords: [fully autonomous, no human review, autonomous agent, self-executing, auto-approve]
+
+  - id: RISK-003
+    category: consequential_decisions
+    description: Materially influences decisions about employment, lending, housing, healthcare access, or legal rights.
+    weight: 25
+    trigger_keywords: [hiring, employment decision, lending, loan approval, credit decision, housing, eviction, insurance claim, legal, immigration, parole]
+
+  - id: RISK-004
+    category: external_exposure
+    description: Customer-facing or public-facing system with direct external user interaction.
+    weight: 15
+    trigger_keywords: [customer-facing, public-facing, external users, chatbot for customers, public api]
+
+  - id: RISK-005
+    category: third_party_dependency
+    description: Relies on third-party or externally hosted models/data with unclear data-handling terms.
+    weight: 10
+    trigger_keywords: [third-party model, external vendor, external api, unverified data source]
+
+  - id: RISK-006
+    category: system_access
+    description: Has permissions to modify, delete, or move data/funds, or to call other systems and tools.
+    weight: 20
+    trigger_keywords: [delete, write access, modify records, transfer funds, execute code, tool use, api access, admin access]
+
+  - id: RISK-007
+    category: scale
+    description: Large-scale deployment affecting many users or high transaction volume.
+    weight: 10
+    trigger_keywords: [large-scale, millions of users, high volume, company-wide, enterprise-wide]
+
+scoring:
+  bands:
+    - level: low
+      max_score: 24
+    - level: medium
+      max_score: 49
+    - level: high
+      max_score: 74
+    - level: critical
+      max_score: 100
