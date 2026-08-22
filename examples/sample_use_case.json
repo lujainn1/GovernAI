@@ -2,11 +2,7 @@
   "name": "Automated Loan Denial Assistant",
   "description": "An AI agent that reviews consumer loan applications and can automatically approve or deny small personal loans up to $5,000 based on credit history and income data, without a human reviewing each decision.",
   "owner": "lending-platform-team",
-  "model_provider": "openrouter",
-  "model_name": "openai/gpt-4o-mini",
-  "data_sources": ["credit bureau API", "internal customer database", "bank statements upload"],
   "data_classification": "restricted",
-  "permissions": ["read customer financial records", "write loan decision to core banking system", "send denial letter to customer"],
   "deployment_context": "customer-facing, fully autonomous",
   "autonomy_level": "fully-autonomous",
   "documentation": "The system pulls applicant credit score, income, and existing debt from the credit bureau API and internal database, then uses a fine-tuned model to output approve/deny plus an interest rate. Denials are auto-sent via an email that includes the applicant's name and a summary of the credit factors used. There is no human review step before a decision is finalized; a human can review denied cases only if the applicant files a complaint afterward. No bias testing has been performed yet. The vendor agreement with the credit bureau has not been reviewed by legal."

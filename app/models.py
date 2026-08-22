@@ -45,11 +45,7 @@ class AIUseCase(BaseModel):
     name: str
     description: str
     owner: str
-    model_provider: Optional[str] = None
-    model_name: Optional[str] = None
-    data_sources: List[str] = Field(default_factory=list)
     data_classification: Optional[str] = None  # public | internal | confidential | restricted
-    permissions: List[str] = Field(default_factory=list)
     deployment_context: Optional[str] = None  # e.g. internal-tool, customer-facing, autonomous-agent
     autonomy_level: Optional[str] = None  # human-in-the-loop | human-on-the-loop | fully-autonomous
     documentation: Optional[str] = None  # free-text excerpt of design docs / DPIA / etc.

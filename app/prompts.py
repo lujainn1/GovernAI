@@ -10,11 +10,7 @@ Name: {use_case.name}
 Owner: {use_case.owner}
 Description: {use_case.description}
 
-Model provider: {use_case.model_provider or "unspecified"}
-Model name: {use_case.model_name or "unspecified"}
-Data sources: {", ".join(use_case.data_sources) or "none listed"}
 Data classification: {use_case.data_classification or "unspecified"}
-Permissions granted to the system: {", ".join(use_case.permissions) or "none listed"}
 Deployment context: {use_case.deployment_context or "unspecified"}
 Autonomy level: {use_case.autonomy_level or "unspecified"}
 

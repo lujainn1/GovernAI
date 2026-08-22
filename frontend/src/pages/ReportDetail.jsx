@@ -79,24 +79,12 @@ export default function ReportDetail() {
           <dd>{use_case.owner}</dd>
           <dt>Description</dt>
           <dd>{use_case.description}</dd>
-          <dt>Model</dt>
-          <dd>
-            {[use_case.model_provider, use_case.model_name].filter(Boolean).join(' / ') || '—'}
-          </dd>
           <dt>Data classification</dt>
           <dd>{use_case.data_classification || '—'}</dd>
           <dt>Deployment context</dt>
           <dd>{use_case.deployment_context || '—'}</dd>
           <dt>Autonomy level</dt>
           <dd>{use_case.autonomy_level || '—'}</dd>
-          <dt>Data sources</dt>
-          <dd>
-            <List items={use_case.data_sources} />
-          </dd>
-          <dt>Permissions</dt>
-          <dd>
-            <List items={use_case.permissions} />
-          </dd>
         </dl>
       </div>
 

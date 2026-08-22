@@ -35,11 +35,7 @@ class UseCaseSubmission(BaseModel):
     name: str
     description: str
     owner: str
-    model_provider: Optional[str] = None
-    model_name: Optional[str] = None
-    data_sources: List[str] = []
     data_classification: Optional[str] = None
-    permissions: List[str] = []
     deployment_context: Optional[str] = None
     autonomy_level: Optional[str] = None
     documentation: Optional[str] = None

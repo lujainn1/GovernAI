@@ -6,21 +6,10 @@ const initialForm = {
   name: '',
   description: '',
   owner: '',
-  model_provider: '',
-  model_name: '',
-  data_sources: '',
   data_classification: '',
-  permissions: '',
   deployment_context: '',
   autonomy_level: '',
   documentation: '',
-}
-
-function toList(value) {
-  return value
-    .split(',')
-    .map((item) => item.trim())
-    .filter(Boolean)
 }
 
 export default function SubmitUseCase() {
@@ -42,11 +31,7 @@ export default function SubmitUseCase() {
         name: form.name,
         description: form.description,
         owner: form.owner,
-        model_provider: form.model_provider || null,
-        model_name: form.model_name || null,
-        data_sources: toList(form.data_sources),
         data_classification: form.data_classification || null,
-        permissions: toList(form.permissions),
         deployment_context: form.deployment_context || null,
         autonomy_level: form.autonomy_level || null,
         documentation: form.documentation || null,
@@ -92,26 +77,6 @@ export default function SubmitUseCase() {
           </div>
 
           <div className="field">
-            <label htmlFor="model_provider">Model provider</label>
-            <input
-              id="model_provider"
-              placeholder="e.g. openai, anthropic, in-house"
-              value={form.model_provider}
-              onChange={updateField('model_provider')}
-            />
-          </div>
-
-          <div className="field">
-            <label htmlFor="model_name">Model name</label>
-            <input
-              id="model_name"
-              placeholder="e.g. gpt-4o, claude-sonnet-5"
-              value={form.model_name}
-              onChange={updateField('model_name')}
-            />
-          </div>
-
-          <div className="field">
             <label htmlFor="data_classification">Data classification</label>
             <select
               id="data_classification"
@@ -152,30 +117,6 @@ export default function SubmitUseCase() {
               <option value="human-on-the-loop">human-on-the-loop</option>
               <option value="fully-autonomous">fully-autonomous</option>
             </select>
-          </div>
-
-          <div className="field">
-            <label htmlFor="data_sources">
-              Data sources <span className="hint">(comma-separated)</span>
-            </label>
-            <input
-              id="data_sources"
-              placeholder="e.g. customer_pii_db, crm_export"
-              value={form.data_sources}
-              onChange={updateField('data_sources')}
-            />
-          </div>
-
-          <div className="field">
-            <label htmlFor="permissions">
-              Permissions <span className="hint">(comma-separated)</span>
-            </label>
-            <input
-              id="permissions"
-              placeholder="e.g. read_customer_data, send_email"
-              value={form.permissions}
-              onChange={updateField('permissions')}
-            />
           </div>
 
           <div className="field span-2">
