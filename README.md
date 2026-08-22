@@ -72,6 +72,7 @@ data/
   audit_log.jsonl          # append-only audit trail (generated)
 examples/
   sample_use_case.json    # example high-risk AI use case for a demo run
+frontend/                 # React + Vite UI (submit, list, view, approve reports)
 tests/                    # pytest suite (LLM calls are mocked, no API key needed)
 ```
 
@@ -85,6 +86,13 @@ pip install -r requirements.txt
 cp .env.example .env
 # edit .env and set OPENROUTER_API_KEY (get one at https://openrouter.ai/keys)
 # OPENROUTER_MODEL can be any model slug from https://openrouter.ai/models
+```
+
+To also run the web UI:
+
+```bash
+cd frontend
+npm install
 ```
 
 ## Usage
@@ -127,6 +135,20 @@ python main.py
 | GET | `/risk-rules` | List the risk-scoring rules |
 
 Interactive API docs are available at `/docs` once the server is running.
+
+### Web UI
+
+With the API running (`python main.py`), start the frontend separately:
+
+```bash
+cd frontend
+npm run dev
+# -> http://localhost:5173
+```
+
+Submit a use case, browse reports, and record human approve/reject decisions
+from the browser instead of the CLI or raw API calls. See
+[frontend/README.md](frontend/README.md) for details.
 
 ## Tests
 

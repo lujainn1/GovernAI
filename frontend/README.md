@@ -1,16 +1,33 @@
-# React + Vite
+# GovernAI Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+React + Vite UI for the GovernAI platform. Talks directly to the FastAPI
+backend (no separate Node/Express layer) — in dev, requests to `/api/*` are
+proxied to `http://localhost:8000` (see `vite.config.js`); the backend also
+has CORS enabled for `http://localhost:5173` if you call it directly.
 
-Currently, two official plugins are available:
+## Pages
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **Reports** (`/`) — table of all governance reports with risk/decision/status badges
+- **Submit use case** (`/submit`) — intake form; runs the full agent pipeline on submit
+- **Report detail** (`/use-cases/:id`) — risk assessment, policy compliance, decision,
+  and an approve/reject panel when a report is `pending_human_approval`
 
-## React Compiler
+## Setup
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```bash
+npm install
+npm run dev
+# -> http://localhost:5173
+```
 
-## Expanding the Oxlint configuration
+The backend must be running separately (see the root [README](../README.md))
+for the app to have any data to show.
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+## Scripts
+
+| Command | Description |
+|---|---|
+| `npm run dev` | Start the Vite dev server with HMR |
+| `npm run build` | Type/lint-free production build to `dist/` |
+| `npm run preview` | Serve the production build locally |
+| `npm run lint` | Run Oxlint |
