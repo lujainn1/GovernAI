@@ -2,6 +2,7 @@
 from typing import List, Optional
 
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from app.llm_client import ConfigurationError
@@ -20,6 +21,13 @@ app = FastAPI(
     title="GovernAI",
     description="Multi-Agent AI Governance Platform",
     version="0.1.0",
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
