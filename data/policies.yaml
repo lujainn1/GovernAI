@@ -1,0 +1,100 @@
+# Organizational AI governance policy repository.
+# The Policy Compliance Agent reads this file (via the get_policies tool)
+# to check an AI use case against organizational standards.
+
+policies:
+  - id: POL-001
+    title: Personal Data Minimization
+    category: data_privacy
+    description: >
+      AI use cases that process personal data must collect and retain only
+      the data strictly necessary for the stated purpose, and must define a
+      retention period.
+    min_risk_level: low
+    requires:
+      - documented_data_retention_period
+      - lawful_basis_for_processing
+
+  - id: POL-002
+    title: Sensitive Data Encryption
+    category: security
+    description: >
+      Any use case that stores or transmits sensitive personal data
+      (health, financial, biometric, government ID) must use encryption at
+      rest and in transit.
+    min_risk_level: medium
+    requires:
+      - encryption_at_rest
+      - encryption_in_transit
+
+  - id: POL-003
+    title: Human Oversight for High-Risk Decisions
+    category: human_oversight
+    description: >
+      AI systems that make or materially influence decisions affecting
+      individuals' legal rights, employment, credit, or access to services
+      must keep a human in the loop and must not operate fully autonomously.
+    min_risk_level: high
+    requires:
+      - human_in_the_loop
+      - documented_appeal_process
+
+  - id: POL-004
+    title: Third-Party Model and Data Vetting
+    category: third_party_data
+    description: >
+      Use cases relying on third-party models, APIs, or data providers must
+      document the vendor, its data-handling terms, and confirm no
+      restricted data is shared with the vendor without an approved data
+      processing agreement.
+    min_risk_level: low
+    requires:
+      - vendor_documented
+      - data_processing_agreement_if_needed
+
+  - id: POL-005
+    title: Explainability and Transparency
+    category: transparency
+    description: >
+      Use cases that affect individuals must be able to provide a
+      plain-language explanation of how the AI reached its output, and
+      users must be informed they are interacting with an AI system.
+    min_risk_level: medium
+    requires:
+      - explanation_available
+      - ai_disclosure_to_end_users
+
+  - id: POL-006
+    title: Bias and Fairness Testing
+    category: fairness
+    description: >
+      Use cases that make decisions about individuals (hiring, lending,
+      access, pricing) must undergo documented bias/fairness testing before
+      deployment and on a recurring basis.
+    min_risk_level: high
+    requires:
+      - bias_testing_completed
+
+  - id: POL-007
+    title: Least-Privilege Tool and System Access
+    category: security
+    description: >
+      Autonomous or semi-autonomous AI agents that call tools, APIs, or
+      systems must be granted the minimum permissions required for their
+      task, and destructive or financial actions require explicit
+      authorization scopes.
+    min_risk_level: medium
+    requires:
+      - least_privilege_permissions
+      - authorization_scope_for_sensitive_actions
+
+  - id: POL-008
+    title: Audit Logging
+    category: transparency
+    description: >
+      Every governed AI use case must produce an audit trail of its
+      inputs, key decisions, and any human approvals, retained for
+      compliance review.
+    min_risk_level: low
+    requires:
+      - audit_logging_enabled
