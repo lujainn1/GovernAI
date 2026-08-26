@@ -2,6 +2,19 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { approveUseCase, getReport } from '../api.js'
 
+const ROUTING_FLAG_LABELS = {
+  personal_data: 'Personal data',
+  sensitive_data: 'Sensitive data',
+  generative_ai: 'Generative AI',
+  external_provider: 'External provider',
+  data_outside_ksa: 'Data outside KSA',
+  high_impact_decision: 'High-impact decision',
+  user_facing_chat: 'User-facing chat',
+  research_purpose: 'Research purpose',
+}
+
+const RESULT_ORDER = { fail: 0, review: 1, not_applicable: 2, pass: 3 }
+
 function List({ items }) {
   if (!items || items.length === 0) return <p className="hint">None</p>
   return (
@@ -10,6 +23,111 @@ function List({ items }) {
         <li key={item}>{item}</li>
       ))}
     </ul>
+  )
+}
+
+function ActiveFlags({ useCase }) {
+  const active = Object.entries(ROUTING_FLAG_LABELS).filter(([field]) => useCase[field])
+  if (active.length === 0) return <p className="hint">None set</p>
+  return (
+    <ul className="tag-list">
+      {active.map(([field, label]) => (
+        <li key={field}>{label}</li>
+      ))}
+    </ul>
+  )
+}
+
+function RiskRegister({ detectedRisks }) {
+  if (!detectedRisks || detectedRisks.length === 0) {
+    return <p className="hint">No named risks were triggered by this submission.</p>
+  }
+  return (
+    <div className="scroll-table">
+      <table>
+        <thead>
+          <tr>
+            <th>Risk</th>
+            <th>Domain</th>
+            <th>L × I = Score</th>
+            <th>Treatment</th>
+          </tr>
+        </thead>
+        <tbody>
+          {detectedRisks.map((risk) => (
+            <tr key={risk.risk_id}>
+              <td>
+                <span className="mono-id">{risk.risk_id}</span> {risk.title}
+              </td>
+              <td>{risk.domain}</td>
+              <td>
+                {risk.likelihood} × {risk.impact} = {risk.inherent_score}/25
+              </td>
+              <td>{risk.treatment}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+function ControlEvaluations({ evaluations }) {
+  if (!evaluations || evaluations.length === 0) {
+    return <p className="hint">No controls were routed for this use case.</p>
+  }
+  const counts = evaluations.reduce((acc, e) => {
+    acc[e.result] = (acc[e.result] || 0) + 1
+    return acc
+  }, {})
+  const sorted = [...evaluations].sort((a, b) => RESULT_ORDER[a.result] - RESULT_ORDER[b.result])
+
+  return (
+    <>
+      <div className="result-count-summary">
+        <span>
+          <strong>{counts.fail || 0}</strong> fail
+        </span>
+        <span>
+          <strong>{counts.review || 0}</strong> review
+        </span>
+        <span>
+          <strong>{counts.pass || 0}</strong> pass
+        </span>
+        <span>
+          <strong>{evaluations.length}</strong> controls evaluated
+        </span>
+      </div>
+      <div className="scroll-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Control</th>
+              <th>Module</th>
+              <th>Result</th>
+              <th>Rationale</th>
+            </tr>
+          </thead>
+          <tbody>
+            {sorted.map((e) => (
+              <tr key={e.control_id}>
+                <td>
+                  <span className="mono-id">{e.control_id}</span>
+                  {e.critical && ' ⚑'}
+                  <br />
+                  {e.principle}
+                </td>
+                <td>{e.module}</td>
+                <td>
+                  <span className={`badge badge-${e.result}`}>{e.result.replaceAll('_', ' ')}</span>
+                </td>
+                <td>{e.rationale}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
   )
 }
 
@@ -85,6 +203,12 @@ export default function ReportDetail() {
           <dd>{use_case.deployment_context || '—'}</dd>
           <dt>Autonomy level</dt>
           <dd>{use_case.autonomy_level || '—'}</dd>
+          <dt>Deployment status</dt>
+          <dd>{use_case.deployment_status}</dd>
+          <dt>Control-routing flags</dt>
+          <dd>
+            <ActiveFlags useCase={use_case} />
+          </dd>
         </dl>
       </div>
 
@@ -98,6 +222,8 @@ export default function ReportDetail() {
         <h3>Risk factors</h3>
         <List items={risk_assessment.risk_factors} />
         <p className="rationale">{risk_assessment.rationale}</p>
+        <h3 style={{ marginTop: 12 }}>Detected risk register</h3>
+        <RiskRegister detectedRisks={risk_assessment.detected_risks} />
       </div>
 
       <div className="card">
@@ -107,11 +233,9 @@ export default function ReportDetail() {
             {policy_compliance.status.replaceAll('_', ' ')}
           </span>
         </div>
-        <h3>Violated policies</h3>
-        <List items={policy_compliance.violated_policies} />
-        <h3 style={{ marginTop: 12 }}>Satisfied policies</h3>
-        <List items={policy_compliance.satisfied_policies} />
         <p className="rationale">{policy_compliance.rationale}</p>
+        <h3 style={{ marginTop: 12 }}>Routed controls</h3>
+        <ControlEvaluations evaluations={policy_compliance.control_evaluations} />
       </div>
 
       <div className="card">

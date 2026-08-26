@@ -5,5 +5,14 @@
   "data_classification": "restricted",
   "deployment_context": "customer-facing, fully autonomous",
   "autonomy_level": "fully-autonomous",
-  "documentation": "The system pulls applicant credit score, income, and existing debt from the credit bureau API and internal database, then uses a fine-tuned model to output approve/deny plus an interest rate. Denials are auto-sent via an email that includes the applicant's name and a summary of the credit factors used. There is no human review step before a decision is finalized; a human can review denied cases only if the applicant files a complaint afterward. No bias testing has been performed yet. The vendor agreement with the credit bureau has not been reviewed by legal."
+  "documentation": "The system pulls applicant credit score, income, and existing debt from the credit bureau API and internal database, then uses a fine-tuned model to output approve/deny plus an interest rate. Denials are auto-sent via an email that includes the applicant's name and a summary of the credit factors used. There is no human review step before a decision is finalized; a human can review denied cases only if the applicant files a complaint afterward. No bias testing has been performed yet. The vendor agreement with the credit bureau has not been reviewed by legal.",
+  "personal_data": true,
+  "sensitive_data": true,
+  "generative_ai": false,
+  "external_provider": true,
+  "data_outside_ksa": false,
+  "high_impact_decision": true,
+  "user_facing_chat": false,
+  "research_purpose": false,
+  "deployment_status": "production"
 }

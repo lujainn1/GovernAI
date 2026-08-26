@@ -1,0 +1,737 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GovernAI Architecture</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,500;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --ink: #182035;
+    --ink-soft: #5B6478;
+    --ink-faint: #8890A0;
+    --paper: #FFFFFF;
+    --paper-raised: #FFFFFF;
+    --line: #D7DBE4;
+    --line-soft: #E7E9EF;
+    --accent: #C2740F;
+    --accent-soft: rgba(194, 116, 15, 0.14);
+    --good: #128A54;
+    --good-soft: rgba(18, 138, 84, 0.13);
+    --critical: #D63838;
+    --critical-soft: rgba(214, 56, 56, 0.13);
+    --shadow-1: 0 1px 2px rgba(16, 24, 40, 0.07);
+    --shadow-2: 0 10px 28px rgba(16, 24, 40, 0.08);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ink: #EDEFF5;
+      --ink-soft: #B6BCCC;
+      --ink-faint: #838BA0;
+      --paper: #1B2030;
+      --paper-raised: #242B40;
+      --line: #3C4560;
+      --line-soft: #2E3550;
+      --accent: #F3A73E;
+      --accent-soft: rgba(243, 167, 62, 0.18);
+      --good: #3ED996;
+      --good-soft: rgba(62, 217, 150, 0.16);
+      --critical: #FF6F6F;
+      --critical-soft: rgba(255, 111, 111, 0.16);
+      --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.3);
+      --shadow-2: 0 12px 30px rgba(0, 0, 0, 0.35);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ink: #EDEFF5;
+    --ink-soft: #B6BCCC;
+    --ink-faint: #838BA0;
+    --paper: #1B2030;
+    --paper-raised: #242B40;
+    --line: #3C4560;
+    --line-soft: #2E3550;
+    --accent: #F3A73E;
+    --accent-soft: rgba(243, 167, 62, 0.18);
+    --good: #3ED996;
+    --good-soft: rgba(62, 217, 150, 0.16);
+    --critical: #FF6F6F;
+    --critical-soft: rgba(255, 111, 111, 0.16);
+    --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-2: 0 12px 30px rgba(0, 0, 0, 0.35);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: "IBM Plex Serif", Georgia, "Times New Roman", serif;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 40px 24px 56px;
+  }
+
+  .wide {
+    max-width: 1500px;
+  }
+
+  .flag {
+    width: 44px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--accent);
+    margin: 0 0 14px;
+  }
+
+  .eyebrow {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin: 0 0 10px;
+  }
+
+  h1 {
+    font-family: "IBM Plex Sans Condensed", "Arial Narrow", sans-serif;
+    font-weight: 700;
+    font-size: clamp(34px, 6vw, 48px);
+    letter-spacing: -0.01em;
+    margin: 0 0 12px;
+    text-wrap: balance;
+    color: var(--ink);
+  }
+
+  .dek {
+    font-size: 18px;
+    color: var(--ink-soft);
+    max-width: 62ch;
+    margin: 0 0 4px;
+  }
+
+  .stack-line {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 13px;
+    color: var(--ink-faint);
+    margin: 14px 0 0;
+    padding-top: 14px;
+    border-top: 1px solid var(--line-soft);
+  }
+
+  .stats {
+    display: flex;
+    gap: 36px;
+    flex-wrap: wrap;
+    margin-top: 18px;
+  }
+
+  .stat {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .stat-num {
+    font-family: "IBM Plex Sans Condensed", sans-serif;
+    font-weight: 700;
+    font-size: 24px;
+    color: var(--accent);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .stat-label {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+
+  h2 {
+    font-family: "IBM Plex Sans Condensed", "Arial Narrow", sans-serif;
+    font-weight: 700;
+    font-size: 22px;
+    letter-spacing: -0.005em;
+    margin: 0 0 6px;
+    color: var(--ink);
+  }
+
+  .section {
+    margin-top: 44px;
+  }
+
+  .section-note {
+    font-size: 16px;
+    color: var(--ink-soft);
+    max-width: 62ch;
+    margin: 0 0 18px;
+  }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 22px;
+    margin: 18px 0 0;
+    padding: 14px 18px;
+    background: var(--paper-raised);
+    border: 1px solid var(--line-soft);
+    border-radius: 8px;
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    box-shadow: var(--shadow-1);
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+  }
+
+  .legend-swatch {
+    width: 28px;
+    height: 0;
+    border-top: 2px solid var(--ink-soft);
+    flex-shrink: 0;
+  }
+
+  .legend-swatch.dashed {
+    border-top-style: dashed;
+  }
+
+  .legend-swatch.bold {
+    border-top-width: 3px;
+    border-top-color: var(--ink);
+  }
+
+  figure {
+    margin: 20px 0 0;
+  }
+
+  .diagram-frame {
+    background: var(--paper-raised);
+    border: 1px solid var(--line-soft);
+    border-radius: 12px;
+    padding: 20px;
+    overflow-x: auto;
+    box-shadow: var(--shadow-1), var(--shadow-2);
+  }
+
+  .diagram-frame svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    min-width: 720px;
+  }
+
+  figcaption {
+    margin-top: 10px;
+    font-size: 15px;
+    color: var(--ink-soft);
+    max-width: 68ch;
+  }
+
+  figcaption b {
+    color: var(--ink);
+    font-weight: 500;
+  }
+
+  .ref-grid {
+    margin-top: 18px;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0;
+    background: var(--paper-raised);
+    border: 1px solid var(--line-soft);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: var(--shadow-1), var(--shadow-2);
+  }
+
+  .ref-row {
+    display: grid;
+    grid-template-columns: minmax(180px, 260px) 1fr;
+    gap: 24px;
+    padding: 10px 20px;
+    align-items: baseline;
+    border-bottom: 1px solid var(--line-soft);
+  }
+
+  .ref-row:last-child {
+    border-bottom: none;
+  }
+
+  .ref-name {
+    font-family: "IBM Plex Sans Condensed", sans-serif;
+    font-weight: 600;
+    font-size: 15px;
+    color: var(--ink);
+    position: relative;
+    padding-left: 16px;
+  }
+
+  .ref-name::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0.45em;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+
+  .ref-path {
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 13.5px;
+    color: var(--ink-soft);
+    overflow-wrap: anywhere;
+  }
+
+  .foot {
+    margin-top: 48px;
+    padding-top: 16px;
+    border-top: 1px solid var(--line-soft);
+    font-family: "IBM Plex Mono", ui-monospace, monospace;
+    font-size: 12px;
+    color: var(--ink-faint);
+  }
+
+  /* SVG diagram text defaults */
+  svg text {
+    font-family: "IBM Plex Sans Condensed", "Arial Narrow", sans-serif;
+    fill: var(--ink);
+  }
+  svg .mono { font-family: "IBM Plex Mono", ui-monospace, monospace; }
+  svg .sub { fill: var(--ink-soft); }
+  svg .faint { fill: var(--ink-faint); }
+  svg .box, svg .box-dashed, svg .chip-good, svg .chip-accent, svg .chip-critical {
+    filter: drop-shadow(0 1px 1px rgba(16, 24, 40, 0.06)) drop-shadow(0 3px 8px rgba(16, 24, 40, 0.08));
+  }
+  svg .box, svg .box-dashed {
+    transition: stroke 0.15s ease, filter 0.15s ease;
+  }
+  svg .box:hover, svg .box-dashed:hover {
+    stroke: var(--accent);
+    filter: drop-shadow(0 2px 3px rgba(16, 24, 40, 0.1)) drop-shadow(0 6px 14px rgba(16, 24, 40, 0.12));
+  }
+  @media (prefers-reduced-motion: reduce) {
+    svg .box, svg .box-dashed { transition: none; }
+  }
+  svg .box { fill: var(--paper-raised); stroke: var(--line); stroke-width: 2; }
+  svg .box-dashed { fill: var(--paper-raised); stroke: var(--ink-soft); stroke-width: 2; stroke-dasharray: 7 5; }
+  svg .bar { fill: var(--paper); stroke: var(--line); stroke-width: 1.5; }
+  svg .line-main { stroke: var(--ink-soft); stroke-width: 2; fill: none; }
+  svg .line-spine { stroke: var(--ink); stroke-width: 3; fill: none; }
+  svg .line-thin { stroke: var(--ink-faint); stroke-width: 1.5; fill: none; }
+  svg .line-dashed { stroke: var(--ink-soft); stroke-width: 2; fill: none; stroke-dasharray: 6 5; }
+  svg .chip-good { fill: var(--good-soft); stroke: var(--good); stroke-width: 2; }
+  svg .chip-accent { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 2; }
+  svg .chip-critical { fill: var(--critical-soft); stroke: var(--critical); stroke-width: 2; }
+  svg .status-good { fill: var(--good); font-weight: 700; }
+  svg .status-accent { fill: var(--accent); font-weight: 700; }
+  svg .status-critical { fill: var(--critical); font-weight: 700; }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <div class="flag"></div>
+  <p class="eyebrow">System Architecture</p>
+  <h1>GovernAI</h1>
+  <p class="dek">A use case enters through a web form or a CLI command and is checked against an SDAIA-derived risk and control library. Detection, scoring, and the final verdict are computed deterministically in code — three LLM agents narrate the findings and judge individual controls, but never invent the numbers.</p>
+  <p class="stack-line">FastAPI · React + Vite · OpenAI (gpt-4o-mini) · flat-file storage (YAML + JSON)</p>
+  <div class="stats">
+    <div class="stat"><span class="stat-num">3</span><span class="stat-label">agents</span></div>
+    <div class="stat"><span class="stat-num">131</span><span class="stat-label">controls</span></div>
+    <div class="stat"><span class="stat-num">35</span><span class="stat-label">named risks</span></div>
+    <div class="stat"><span class="stat-num">9</span><span class="stat-label">routing flags</span></div>
+    <div class="stat"><span class="stat-num">3</span><span class="stat-label">verdict outcomes</span></div>
+  </div>
+</div>
+
+<div class="page wide section">
+  <h2>1 — Submission to verdict</h2>
+  <p class="section-note">Both entry points run the exact same in-process pipeline — the CLI does not go through the API, it calls the orchestrator directly. Inside each of the three stages, a deterministic engine now runs before the LLM does (see Fig. 2) — the Decision Agent's verdict is the fork in the road: only one of its three outcomes can still change.</p>
+
+  <div class="legend">
+    <span class="legend-item"><span class="legend-swatch bold"></span> primary pipeline</span>
+    <span class="legend-item"><span class="legend-swatch"></span> in-process call</span>
+    <span class="legend-item"><span class="legend-swatch dashed"></span> waits on a human</span>
+  </div>
+
+  <figure>
+    <div class="diagram-frame">
+      <svg viewBox="0 0 1780 920" role="img" aria-label="A use case submitted via the browser or CLI flows through GovernanceOrchestrator into the Risk, Policy, and Decision agents in sequence, with every stage logged to the audit trail. The Decision Agent's verdict forks into three outcomes: approve becomes a completed report, require_human_approval waits for a person to act via the approve endpoint or CLI, and block ends the case until it is remediated and resubmitted.">
+        <defs>
+          <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="var(--ink)"></path>
+          </marker>
+          <marker id="arrowSoft" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="var(--ink-soft)"></path>
+          </marker>
+        </defs>
+
+        <!-- entry -> frontend -> api -->
+        <line x1="220" y1="90" x2="272" y2="90" class="line-main" marker-end="url(#arrow)"></line>
+        <line x1="470" y1="90" x2="522" y2="90" class="line-main" marker-end="url(#arrow)"></line>
+
+        <!-- api -> orchestrator (elbow) -->
+        <polyline points="720,90 745,90 745,195 772,195" class="line-main" marker-end="url(#arrow)"></polyline>
+        <!-- terminal -> orchestrator (elbow, bypasses UI + API) -->
+        <polyline points="220,300 765,300 765,195 772,195" class="line-main" marker-end="url(#arrow)"></polyline>
+
+        <!-- orchestrator -> risk -> policy -> decision : primary pipeline -->
+        <line x1="980" y1="195" x2="1022" y2="195" class="line-spine" marker-end="url(#arrow)"></line>
+        <line x1="1220" y1="195" x2="1272" y2="195" class="line-spine" marker-end="url(#arrow)"></line>
+        <line x1="1470" y1="195" x2="1522" y2="195" class="line-spine" marker-end="url(#arrow)"></line>
+
+        <!-- boxes: entry points -->
+        <rect x="30" y="55" width="190" height="70" rx="10" class="box"></rect>
+        <text x="125" y="97" text-anchor="middle" font-size="19" font-weight="600">Browser</text>
+
+        <rect x="280" y="55" width="190" height="70" rx="10" class="box"></rect>
+        <text x="375" y="87" text-anchor="middle" font-size="19" font-weight="600">React + Vite UI</text>
+        <text x="375" y="108" text-anchor="middle" font-size="13" class="sub mono">:5173</text>
+
+        <rect x="530" y="55" width="190" height="70" rx="10" class="box"></rect>
+        <text x="625" y="87" text-anchor="middle" font-size="19" font-weight="600">FastAPI app.api</text>
+        <text x="625" y="108" text-anchor="middle" font-size="13" class="sub mono">:8000</text>
+
+        <rect x="30" y="265" width="190" height="70" rx="10" class="box"></rect>
+        <text x="125" y="297" text-anchor="middle" font-size="19" font-weight="600">Terminal</text>
+
+        <!-- orchestrator -->
+        <rect x="780" y="160" width="200" height="70" rx="10" class="box"></rect>
+        <text x="880" y="190" text-anchor="middle" font-size="18" font-weight="600">Orchestrator</text>
+        <text x="880" y="211" text-anchor="middle" font-size="13" class="sub mono">orchestrator.py</text>
+
+        <!-- three agents -->
+        <rect x="1030" y="160" width="190" height="70" rx="10" class="box"></rect>
+        <text x="1125" y="184" text-anchor="middle" font-size="17" font-weight="600">Risk Assessment</text>
+        <text x="1125" y="202" text-anchor="middle" font-size="11.5" class="sub mono">risk_engine.py</text>
+        <text x="1125" y="216" text-anchor="middle" font-size="11.5" class="faint">+ LLM narrative</text>
+
+        <rect x="1280" y="160" width="190" height="70" rx="10" class="box"></rect>
+        <text x="1375" y="184" text-anchor="middle" font-size="17" font-weight="600">Policy Compliance</text>
+        <text x="1375" y="202" text-anchor="middle" font-size="11.5" class="sub mono">control_router.py</text>
+        <text x="1375" y="216" text-anchor="middle" font-size="11.5" class="faint">+ LLM verdicts</text>
+
+        <rect x="1530" y="160" width="190" height="70" rx="10" class="box"></rect>
+        <text x="1625" y="184" text-anchor="middle" font-size="17" font-weight="600">Decision Agent</text>
+        <text x="1625" y="202" text-anchor="middle" font-size="11.5" class="sub mono">deterministic_decision()</text>
+        <text x="1625" y="216" text-anchor="middle" font-size="11.5" class="faint">+ LLM narrative</text>
+
+        <!-- connectors down to audit bar -->
+        <line x1="880" y1="230" x2="880" y2="349" class="line-thin" marker-end="url(#arrowSoft)"></line>
+        <text x="895" y="290" font-size="13" class="faint mono">log_event()</text>
+        <line x1="1125" y1="230" x2="1125" y2="349" class="line-thin" marker-end="url(#arrowSoft)"></line>
+        <line x1="1375" y1="230" x2="1375" y2="349" class="line-thin" marker-end="url(#arrowSoft)"></line>
+        <line x1="1625" y1="230" x2="1625" y2="349" class="line-thin" marker-end="url(#arrowSoft)"></line>
+
+        <!-- audit log bar -->
+        <rect x="780" y="355" width="940" height="50" rx="8" class="bar"></rect>
+        <text x="1250" y="385" text-anchor="middle" font-size="15" class="sub mono">data/audit_log.jsonl — append-only, one entry per stage</text>
+
+        <!-- stem from audit bar to fan-out -->
+        <line x1="1250" y1="405" x2="1250" y2="450" class="line-thin"></line>
+
+        <!-- fan-out to three outcomes -->
+        <line x1="1250" y1="450" x2="950" y2="481" class="line-main" marker-end="url(#arrow)"></line>
+        <line x1="1250" y1="450" x2="1250" y2="481" class="line-main" marker-end="url(#arrow)"></line>
+        <line x1="1250" y1="450" x2="1550" y2="481" class="line-main" marker-end="url(#arrow)"></line>
+
+        <text x="1010" y="465" font-size="13" class="faint mono">approve</text>
+        <text x="1258" y="470" font-size="13" class="faint mono">require_human_approval</text>
+        <text x="1420" y="465" font-size="13" class="faint mono" text-anchor="end">block</text>
+
+        <!-- outcome chips -->
+        <rect x="860" y="485" width="180" height="70" rx="10" class="chip-good"></rect>
+        <text x="950" y="510" text-anchor="middle" font-size="12" letter-spacing="0.06em" class="sub">STATUS</text>
+        <text x="950" y="533" text-anchor="middle" font-size="18" class="status-good">completed</text>
+
+        <rect x="1140" y="485" width="220" height="70" rx="10" class="chip-accent"></rect>
+        <text x="1250" y="510" text-anchor="middle" font-size="12" letter-spacing="0.06em" class="sub">STATUS</text>
+        <text x="1250" y="533" text-anchor="middle" font-size="14" class="status-accent mono">pending_human_approval</text>
+
+        <rect x="1460" y="485" width="180" height="70" rx="10" class="chip-critical"></rect>
+        <text x="1550" y="510" text-anchor="middle" font-size="12" letter-spacing="0.06em" class="sub">STATUS</text>
+        <text x="1550" y="533" text-anchor="middle" font-size="18" class="status-critical">blocked</text>
+        <text x="1550" y="568" text-anchor="middle" font-size="12.5" class="faint">remediate → resubmit</text>
+
+        <!-- pending -> human approver -->
+        <line x1="1250" y1="555" x2="1250" y2="614" class="line-dashed" marker-end="url(#arrowSoft)"></line>
+        <text x="1266" y="590" font-size="12.5" class="faint mono">/approve · cli approve</text>
+
+        <rect x="1140" y="620" width="220" height="70" rx="10" class="box-dashed"></rect>
+        <text x="1250" y="650" text-anchor="middle" font-size="18" font-weight="600">Human Approver</text>
+        <text x="1250" y="671" text-anchor="middle" font-size="12.5" class="sub">HR Manager, reviewer, etc.</text>
+
+        <!-- human approver -> two final chips -->
+        <line x1="1210" y1="690" x2="1120" y2="756" class="line-dashed" marker-end="url(#arrowSoft)"></line>
+        <text x="1090" y="725" font-size="13" class="faint mono">approve</text>
+        <line x1="1290" y1="690" x2="1380" y2="756" class="line-dashed" marker-end="url(#arrowSoft)"></line>
+        <text x="1345" y="725" font-size="13" class="faint mono" text-anchor="end">reject</text>
+
+        <rect x="1010" y="760" width="220" height="60" rx="10" class="chip-good"></rect>
+        <text x="1120" y="796" text-anchor="middle" font-size="15" class="status-good mono">approved_by_human</text>
+
+        <rect x="1270" y="760" width="220" height="60" rx="10" class="chip-critical"></rect>
+        <text x="1380" y="796" text-anchor="middle" font-size="15" class="status-critical mono">rejected_by_human</text>
+
+        <!-- connectors into reports store -->
+        <line x1="950" y1="555" x2="950" y2="852" class="line-thin"></line>
+        <line x1="1550" y1="555" x2="1550" y2="852" class="line-thin"></line>
+        <line x1="1120" y1="820" x2="1120" y2="852" class="line-thin"></line>
+        <line x1="1380" y1="820" x2="1380" y2="852" class="line-thin"></line>
+
+        <!-- reports store bar -->
+        <rect x="780" y="855" width="940" height="50" rx="8" class="bar"></rect>
+        <text x="1250" y="885" text-anchor="middle" font-size="15" class="sub mono">data/reports/&lt;use_case_id&gt;.json — written at finalize, rewritten after a human decision</text>
+      </svg>
+    </div>
+    <figcaption><b>Fig. 1</b> — how a submission moves from either entry point through the three-agent pipeline to a final status. The CLI reaches the orchestrator directly; it never calls the API.</figcaption>
+  </figure>
+
+  <div class="ref-grid">
+    <div class="ref-row"><span class="ref-name">React + Vite UI</span><span class="ref-path">frontend/src/pages/*.jsx</span></div>
+    <div class="ref-row"><span class="ref-name">FastAPI app</span><span class="ref-path">app/api.py</span></div>
+    <div class="ref-row"><span class="ref-name">Orchestrator</span><span class="ref-path">app/orchestrator.py — run(), apply_human_decision()</span></div>
+    <div class="ref-row"><span class="ref-name">Risk / Policy / Decision agents</span><span class="ref-path">app/agents/risk_agent.py, policy_agent.py, decision_agent.py</span></div>
+    <div class="ref-row"><span class="ref-name">Deterministic risk engine</span><span class="ref-path">app/tools/risk_engine.py — detect_risks(), compute_overall_risk()</span></div>
+    <div class="ref-row"><span class="ref-name">Deterministic control router</span><span class="ref-path">app/tools/control_router.py — route_controls()</span></div>
+    <div class="ref-row"><span class="ref-name">Risk &amp; control libraries</span><span class="ref-path">data/risk_rules.yaml (35 risks), data/policies.yaml (131 controls)</span></div>
+    <div class="ref-row"><span class="ref-name">Audit trail</span><span class="ref-path">app/tools/audit_log.py → data/audit_log.jsonl</span></div>
+    <div class="ref-row"><span class="ref-name">Reports store</span><span class="ref-path">app/reports.py → data/reports/&lt;id&gt;.json</span></div>
+    <div class="ref-row"><span class="ref-name">CLI</span><span class="ref-path">app/cli.py — submit / list / show / approve / audit-log</span></div>
+  </div>
+</div>
+
+<div class="page wide section">
+  <h2>2 — Deterministic core, LLM narrates</h2>
+  <p class="section-note">Inside every stage, code runs before the model does. For Risk and Decision, the LLM never touches the number — it only explains a value already fixed in Python. For Policy Compliance, the LLM's judgment <em>is</em> the answer, but only for a fixed, code-selected list of controls — it cannot add, remove, or skip one.</p>
+
+  <figure>
+    <div class="diagram-frame">
+      <svg viewBox="0 0 1450 430" role="img" aria-label="Two rows compare how determinism works in each agent. Top row, Risk Assessment and Decision agents: a deterministic function computes the risk level and score, or the block/human-review/approve decision, from the use case; that fixed value is passed to the LLM only as context, and flows through unchanged to the final result, while the LLM contributes only narrative rationale. Bottom row, Policy Compliance agent: a deterministic router computes the fixed list of applicable controls; that exact list is passed to the LLM, which must return a pass, fail, or review verdict for every control on it; the set of controls is fixed, but each verdict is the LLM's judgment.">
+        <defs>
+          <marker id="arrow3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="var(--ink)"></path>
+          </marker>
+          <marker id="arrow3Soft" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="var(--ink-faint)"></path>
+          </marker>
+        </defs>
+
+        <text x="30" y="34" font-size="12.5" letter-spacing="0.08em" class="faint mono">RISK ASSESSMENT &amp; DECISION AGENTS</text>
+
+        <!-- Row A boxes -->
+        <rect x="30" y="55" width="190" height="90" rx="10" class="box"></rect>
+        <text x="125" y="96" text-anchor="middle" font-size="16" font-weight="600">Use case +</text>
+        <text x="125" y="114" text-anchor="middle" font-size="16" font-weight="600">routing flags</text>
+
+        <rect x="270" y="55" width="190" height="90" rx="10" class="box"></rect>
+        <text x="365" y="96" text-anchor="middle" font-size="15.5" font-weight="600">Deterministic</text>
+        <text x="365" y="114" text-anchor="middle" font-size="15.5" font-weight="600">function</text>
+        <text x="365" y="132" text-anchor="middle" font-size="11.5" class="sub mono">risk_engine.py</text>
+
+        <text x="605" y="45" text-anchor="middle" font-size="12" letter-spacing="0.08em" fill="var(--accent)" font-weight="600">FIXED</text>
+        <rect x="510" y="55" width="190" height="90" rx="10" class="box"></rect>
+        <text x="605" y="100" text-anchor="middle" font-size="15" font-weight="600">risk_level</text>
+        <text x="605" y="118" text-anchor="middle" font-size="15" font-weight="600">+ score</text>
+
+        <rect x="750" y="55" width="190" height="90" rx="10" class="box-dashed"></rect>
+        <text x="845" y="96" text-anchor="middle" font-size="17" font-weight="600">OpenAI</text>
+        <text x="845" y="114" text-anchor="middle" font-size="11.5" class="sub mono">gpt-4o-mini</text>
+
+        <rect x="990" y="55" width="190" height="90" rx="10" class="box"></rect>
+        <text x="1085" y="92" text-anchor="middle" font-size="14.5" font-weight="600">LLM writes</text>
+        <text x="1085" y="108" text-anchor="middle" font-size="14.5" font-weight="600">narrative only</text>
+        <text x="1085" y="126" text-anchor="middle" font-size="11" class="sub">rationale, risk_factors</text>
+
+        <rect x="1230" y="55" width="190" height="90" rx="10" class="box"></rect>
+        <text x="1325" y="96" text-anchor="middle" font-size="15" font-weight="600">Final result</text>
+        <text x="1325" y="114" text-anchor="middle" font-size="11" class="sub mono">RiskAssessmentResult</text>
+
+        <line x1="220" y1="100" x2="262" y2="100" class="line-main" marker-end="url(#arrow3)"></line>
+        <text x="241" y="86" text-anchor="middle" font-size="11.5" class="faint mono">detect_risks()</text>
+
+        <line x1="460" y1="100" x2="502" y2="100" class="line-spine" marker-end="url(#arrow3)"></line>
+        <text x="481" y="86" text-anchor="middle" font-size="11.5" class="faint mono">L × I</text>
+
+        <line x1="700" y1="100" x2="742" y2="100" class="line-thin" marker-end="url(#arrow3Soft)"></line>
+        <text x="721" y="86" text-anchor="middle" font-size="10.5" class="faint">as context</text>
+
+        <line x1="940" y1="100" x2="982" y2="100" class="line-main" marker-end="url(#arrow3)"></line>
+
+        <line x1="1180" y1="100" x2="1222" y2="100" class="line-main" marker-end="url(#arrow3)"></line>
+        <text x="1201" y="86" text-anchor="middle" font-size="10.5" class="faint">merge</text>
+
+        <polyline points="605,145 605,190 1325,190 1325,145" class="line-dashed" marker-end="url(#arrow3)"></polyline>
+        <text x="965" y="205" text-anchor="middle" font-size="12" class="faint mono">flows through unchanged — the LLM cannot alter it</text>
+
+        <!-- Row B -->
+        <text x="30" y="234" font-size="12.5" letter-spacing="0.08em" class="faint mono">POLICY COMPLIANCE AGENT</text>
+
+        <rect x="30" y="255" width="190" height="90" rx="10" class="box"></rect>
+        <text x="125" y="296" text-anchor="middle" font-size="16" font-weight="600">Use case +</text>
+        <text x="125" y="314" text-anchor="middle" font-size="16" font-weight="600">routing flags</text>
+
+        <rect x="270" y="255" width="190" height="90" rx="10" class="box"></rect>
+        <text x="365" y="296" text-anchor="middle" font-size="15.5" font-weight="600">Deterministic</text>
+        <text x="365" y="314" text-anchor="middle" font-size="15.5" font-weight="600">router</text>
+        <text x="365" y="332" text-anchor="middle" font-size="11.5" class="sub mono">control_router.py</text>
+
+        <text x="605" y="245" text-anchor="middle" font-size="12" letter-spacing="0.08em" fill="var(--accent)" font-weight="600">FIXED</text>
+        <rect x="510" y="255" width="190" height="90" rx="10" class="box"></rect>
+        <text x="605" y="300" text-anchor="middle" font-size="15" font-weight="600">N applicable</text>
+        <text x="605" y="318" text-anchor="middle" font-size="15" font-weight="600">controls</text>
+
+        <rect x="750" y="255" width="190" height="90" rx="10" class="box-dashed"></rect>
+        <text x="845" y="296" text-anchor="middle" font-size="17" font-weight="600">OpenAI</text>
+        <text x="845" y="314" text-anchor="middle" font-size="11.5" class="sub mono">gpt-4o-mini</text>
+
+        <rect x="990" y="255" width="190" height="90" rx="10" class="box"></rect>
+        <text x="1085" y="292" text-anchor="middle" font-size="14.5" font-weight="600">LLM judges</text>
+        <text x="1085" y="308" text-anchor="middle" font-size="14.5" font-weight="600">every control</text>
+        <text x="1085" y="326" text-anchor="middle" font-size="11" class="sub">pass / fail / review</text>
+
+        <rect x="1230" y="255" width="190" height="90" rx="10" class="box"></rect>
+        <text x="1325" y="296" text-anchor="middle" font-size="15" font-weight="600">Final result</text>
+        <text x="1325" y="314" text-anchor="middle" font-size="11" class="sub mono">PolicyComplianceResult</text>
+
+        <line x1="220" y1="300" x2="262" y2="300" class="line-main" marker-end="url(#arrow3)"></line>
+        <text x="241" y="286" text-anchor="middle" font-size="11.5" class="faint mono">route_controls()</text>
+
+        <line x1="460" y1="300" x2="502" y2="300" class="line-spine" marker-end="url(#arrow3)"></line>
+        <text x="481" y="286" text-anchor="middle" font-size="11.5" class="faint mono">applies_when</text>
+
+        <line x1="700" y1="300" x2="742" y2="300" class="line-thin" marker-end="url(#arrow3Soft)"></line>
+        <text x="721" y="286" text-anchor="middle" font-size="10.5" class="faint">exact list</text>
+
+        <line x1="940" y1="300" x2="982" y2="300" class="line-main" marker-end="url(#arrow3)"></line>
+
+        <line x1="1180" y1="300" x2="1222" y2="300" class="line-main" marker-end="url(#arrow3)"></line>
+        <text x="1201" y="286" text-anchor="middle" font-size="10.5" class="faint">merge</text>
+
+        <polyline points="605,345 605,390 1325,390 1325,345" class="line-dashed" marker-end="url(#arrow3)"></polyline>
+        <text x="965" y="405" text-anchor="middle" font-size="12" class="faint mono">the SET is fixed — each verdict is the LLM's</text>
+      </svg>
+    </div>
+    <figcaption><b>Fig. 2</b> — the shared <b>app/agents/base.py</b> tool-calling loop still runs underneath both rows, but what the LLM is asked to produce is now much narrower: a value it cannot change, or a judgment call scoped to a list it cannot edit.</figcaption>
+  </figure>
+</div>
+
+<div class="page wide section">
+  <h2>3 — How risk is scored</h2>
+  <p class="section-note">A worked example from a real submission (the bundled loan-denial use case, <b style="color:var(--ink)">examples/sample_use_case.json</b>): eight of the 35 library risks triggered. The worst one sets the base score; each additional triggered risk adds a small, capped bump — several risk factors appearing together push the score higher than any single one of them alone.</p>
+
+  <figure>
+    <div class="diagram-frame">
+      <svg viewBox="0 0 1200 380" role="img" aria-label="Eight risks were detected for the example use case, with likelihood times impact scores from 12 to 25. The worst, R-09 bias and discrimination at 25, sets the base score of 100 out of 100. Seven additional triggered risks add a compounding bump of up to 10 points, capped at 100, for a final score of 100, landing in the critical band on the same low, medium, high, critical gradient as before.">
+        <defs>
+          <linearGradient id="riskGradient" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="var(--good)"></stop>
+            <stop offset="33%" stop-color="var(--good)"></stop>
+            <stop offset="55%" stop-color="var(--accent)"></stop>
+            <stop offset="78%" stop-color="var(--accent)"></stop>
+            <stop offset="100%" stop-color="var(--critical)"></stop>
+          </linearGradient>
+          <marker id="arrow4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="var(--ink)"></path>
+          </marker>
+        </defs>
+
+        <text x="40" y="15" font-size="12" letter-spacing="0.06em" class="faint mono">8 DETECTED RISKS (likelihood × impact)</text>
+
+        <rect x="40" y="20" width="110" height="34" rx="8" class="box"></rect>
+        <text x="95" y="41" text-anchor="middle" font-size="12.5" class="mono">R-01: 16</text>
+
+        <rect x="162" y="20" width="110" height="34" rx="8" class="box"></rect>
+        <text x="217" y="41" text-anchor="middle" font-size="12.5" class="mono">R-02: 20</text>
+
+        <rect x="284" y="20" width="110" height="34" rx="8" class="chip-critical"></rect>
+        <text x="339" y="41" text-anchor="middle" font-size="12.5" class="mono status-critical">R-09: 25</text>
+
+        <rect x="406" y="20" width="110" height="34" rx="8" class="box"></rect>
+        <text x="461" y="41" text-anchor="middle" font-size="12.5" class="mono">R-14: 12</text>
+
+        <rect x="528" y="20" width="110" height="34" rx="8" class="box"></rect>
+        <text x="583" y="41" text-anchor="middle" font-size="12.5" class="mono">R-15: 15</text>
+
+        <rect x="650" y="20" width="110" height="34" rx="8" class="box"></rect>
+        <text x="705" y="41" text-anchor="middle" font-size="12.5" class="mono">R-21: 12</text>
+
+        <rect x="772" y="20" width="110" height="34" rx="8" class="box"></rect>
+        <text x="827" y="41" text-anchor="middle" font-size="12.5" class="mono">R-25: 16</text>
+
+        <rect x="894" y="20" width="110" height="34" rx="8" class="box"></rect>
+        <text x="949" y="41" text-anchor="middle" font-size="12.5" class="mono">R-33: 16</text>
+
+        <line x1="339" y1="54" x2="255" y2="106" class="line-main" marker-end="url(#arrow4)"></line>
+        <text x="330" y="75" text-anchor="middle" font-size="11.5" class="faint mono">worst of 8</text>
+
+        <rect x="140" y="110" width="220" height="50" rx="8" class="box"></rect>
+        <text x="250" y="130" text-anchor="middle" font-size="14" font-weight="600">MAX = 25 / 25</text>
+        <text x="250" y="148" text-anchor="middle" font-size="10.5" class="faint mono">R-09 bias/discrimination</text>
+
+        <line x1="360" y1="135" x2="432" y2="135" class="line-spine" marker-end="url(#arrow4)"></line>
+        <text x="396" y="121" text-anchor="middle" font-size="11" class="faint mono">÷25 × 100</text>
+
+        <rect x="440" y="110" width="220" height="50" rx="8" class="box"></rect>
+        <text x="550" y="135" text-anchor="middle" font-size="14" font-weight="600">Base score = 100</text>
+
+        <line x1="660" y1="135" x2="732" y2="135" class="line-main" marker-end="url(#arrow4)"></line>
+        <text x="696" y="121" text-anchor="middle" font-size="11" class="faint mono">+ up to 10</text>
+
+        <rect x="740" y="110" width="260" height="50" rx="8" class="box"></rect>
+        <text x="870" y="130" text-anchor="middle" font-size="14" font-weight="600">+ compounding: +10</text>
+        <text x="870" y="148" text-anchor="middle" font-size="10.5" class="faint mono">min(10, 3 × 7 extra risks)</text>
+
+        <line x1="870" y1="160" x2="870" y2="192" class="line-main" marker-end="url(#arrow4)"></line>
+
+        <rect x="760" y="200" width="220" height="50" rx="8" class="chip-critical"></rect>
+        <text x="870" y="230" text-anchor="middle" font-size="15" font-weight="700" class="status-critical">Final score: 100</text>
+
+        <polyline points="870,250 870,268 1160,268 1160,300" class="line-dashed" marker-end="url(#arrow4)"></polyline>
+        <text x="1015" y="262" text-anchor="middle" font-size="11.5" class="faint mono">capped at 100</text>
+
+        <text x="164" y="292" text-anchor="middle" font-size="14" font-weight="600">low</text>
+        <text x="419" y="292" text-anchor="middle" font-size="14" font-weight="600">medium</text>
+        <text x="679" y="292" text-anchor="middle" font-size="14" font-weight="600">high</text>
+        <text x="945" y="292" text-anchor="middle" font-size="14" font-weight="600">critical</text>
+
+        <rect x="40" y="300" width="1120" height="30" rx="15" fill="url(#riskGradient)"></rect>
+
+        <line x1="308.8" y1="300" x2="308.8" y2="330" stroke="var(--paper-raised)" stroke-width="3"></line>
+        <line x1="588.8" y1="300" x2="588.8" y2="330" stroke="var(--paper-raised)" stroke-width="3"></line>
+        <line x1="868.8" y1="300" x2="868.8" y2="330" stroke="var(--paper-raised)" stroke-width="3"></line>
+
+        <text x="40" y="352" text-anchor="middle" font-size="12" class="sub mono">0</text>
+        <text x="308.8" y="352" text-anchor="middle" font-size="12" class="sub mono">24</text>
+        <text x="588.8" y="352" text-anchor="middle" font-size="12" class="sub mono">49</text>
+        <text x="868.8" y="352" text-anchor="middle" font-size="12" class="sub mono">74</text>
+        <text x="1160" y="352" text-anchor="middle" font-size="12" class="sub mono">100</text>
+      </svg>
+    </div>
+    <figcaption><b>Fig. 3</b> — <b>app/tools/risk_engine.py</b>: likelihood comes from how a risk triggered (keyword match = 3, a routing flag = 4, both = 5); impact (1–5) is fixed per risk in <b>data/risk_rules.yaml</b>. The bands themselves are unchanged from the platform's original design.</figcaption>
+  </figure>
+</div>
+
+<div class="page foot">GovernAI — Multi-Agent AI Governance Platform</div>
+
+</body>
+</html>

@@ -87,7 +87,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     p_submit = sub.add_parser("submit", help="Submit a new AI use case for governance review")
     p_submit.add_argument("file", help="Path to a JSON file describing the use case")
-    p_submit.add_argument("--model", default=None, help="Override the OpenRouter model slug")
+    p_submit.add_argument("--model", default=None, help="Override the OpenAI model")
     p_submit.set_defaults(func=cmd_submit)
 
     p_show = sub.add_parser("show", help="Show the governance report for a use case")

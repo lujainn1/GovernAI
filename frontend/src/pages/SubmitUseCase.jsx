@@ -10,7 +10,59 @@ const initialForm = {
   deployment_context: '',
   autonomy_level: '',
   documentation: '',
+  personal_data: false,
+  sensitive_data: false,
+  generative_ai: false,
+  external_provider: false,
+  data_outside_ksa: false,
+  high_impact_decision: false,
+  user_facing_chat: false,
+  research_purpose: false,
+  deployment_status: 'development',
 }
+
+const ROUTING_FLAGS = [
+  {
+    field: 'personal_data',
+    label: 'Processes personal data',
+    hint: 'Activates the PDPL control module',
+  },
+  {
+    field: 'sensitive_data',
+    label: 'Processes sensitive personal data',
+    hint: 'Health, biometric, genetic, or other sensitive categories',
+  },
+  {
+    field: 'generative_ai',
+    label: 'Uses generative AI / an LLM',
+    hint: 'Activates the GenAI control module',
+  },
+  {
+    field: 'external_provider',
+    label: 'Relies on an external vendor/API',
+    hint: 'Third-party model, cloud, or data provider',
+  },
+  {
+    field: 'data_outside_ksa',
+    label: 'Data leaves or is accessible outside KSA',
+    hint: 'Activates cross-border transfer controls (with personal data)',
+  },
+  {
+    field: 'high_impact_decision',
+    label: 'Affects rights or opportunities',
+    hint: 'Employment, credit, access, or similarly consequential decisions',
+  },
+  {
+    field: 'user_facing_chat',
+    label: 'User-facing chatbot / interactive AI',
+    hint: 'Activates AI-disclosure and transparency controls',
+  },
+  {
+    field: 'research_purpose',
+    label: 'Research or statistical purpose',
+    hint: 'Activates research-specific data-handling controls',
+  },
+]
 
 export default function SubmitUseCase() {
   const [form, setForm] = useState(initialForm)
@@ -20,6 +72,10 @@ export default function SubmitUseCase() {
 
   function updateField(field) {
     return (event) => setForm((prev) => ({ ...prev, [field]: event.target.value }))
+  }
+
+  function toggleFlag(field) {
+    return (event) => setForm((prev) => ({ ...prev, [field]: event.target.checked }))
   }
 
   async function handleSubmit(event) {
@@ -35,6 +91,15 @@ export default function SubmitUseCase() {
         deployment_context: form.deployment_context || null,
         autonomy_level: form.autonomy_level || null,
         documentation: form.documentation || null,
+        personal_data: form.personal_data,
+        sensitive_data: form.sensitive_data,
+        generative_ai: form.generative_ai,
+        external_provider: form.external_provider,
+        data_outside_ksa: form.data_outside_ksa,
+        high_impact_decision: form.high_impact_decision,
+        user_facing_chat: form.user_facing_chat,
+        research_purpose: form.research_purpose,
+        deployment_status: form.deployment_status,
       }
       const report = await submitUseCase(payload)
       navigate(`/use-cases/${report.use_case.id}`)
@@ -49,7 +114,8 @@ export default function SubmitUseCase() {
     <>
       <h1>Submit an AI use case</h1>
       <p style={{ marginBottom: 24, color: 'var(--text)' }}>
-        Runs the full agent pipeline: risk assessment, policy compliance, then a decision.
+        Runs the full agent pipeline: deterministic risk detection, a control review scoped
+        by the flags below, then a decision.
       </p>
 
       {error && <div className="error-banner">{error}</div>}
@@ -119,6 +185,18 @@ export default function SubmitUseCase() {
             </select>
           </div>
 
+          <div className="field">
+            <label htmlFor="deployment_status">Deployment status</label>
+            <select
+              id="deployment_status"
+              value={form.deployment_status}
+              onChange={updateField('deployment_status')}
+            >
+              <option value="development">development</option>
+              <option value="production">production</option>
+            </select>
+          </div>
+
           <div className="field span-2">
             <label htmlFor="documentation">
               Documentation <span className="hint">(design docs / DPIA excerpt, optional)</span>
@@ -129,6 +207,23 @@ export default function SubmitUseCase() {
               onChange={updateField('documentation')}
             />
           </div>
+        </div>
+
+        <h2 style={{ marginTop: 32 }}>Control-routing flags</h2>
+        <p className="hint" style={{ marginBottom: 12 }}>
+          These deterministically select which SDAIA control modules and named risks apply —
+          they are not left to the agents' judgment.
+        </p>
+        <div className="checkbox-grid">
+          {ROUTING_FLAGS.map(({ field, label, hint }) => (
+            <label className="checkbox-field" key={field}>
+              <input type="checkbox" checked={form[field]} onChange={toggleFlag(field)} />
+              <span>
+                <strong>{label}</strong>
+                <span className="hint">{hint}</span>
+              </span>
+            </label>
+          ))}
         </div>
 
         <div className="form-actions">

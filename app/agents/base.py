@@ -1,4 +1,4 @@
-"""Base class implementing a small tool-calling agent loop against OpenRouter.
+"""Base class implementing a small tool-calling agent loop against OpenAI.
 
 Each concrete agent (Risk Assessment, Policy Compliance, Decision) supplies
 a system prompt, a set of OpenAI-style tool schemas, and the Python
@@ -56,7 +56,7 @@ class BaseAgent:
         self.system_prompt = system_prompt
         self.tools = tools or []
         self.tool_functions = tool_functions or {}
-        self.model = model or config.OPENROUTER_MODEL
+        self.model = model or config.OPENAI_MODEL
 
     def run(
         self,

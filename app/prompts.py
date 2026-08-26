@@ -13,6 +13,17 @@ Description: {use_case.description}
 Data classification: {use_case.data_classification or "unspecified"}
 Deployment context: {use_case.deployment_context or "unspecified"}
 Autonomy level: {use_case.autonomy_level or "unspecified"}
+Deployment status: {use_case.deployment_status}
+
+Control-routing flags:
+- personal_data: {use_case.personal_data}
+- sensitive_data: {use_case.sensitive_data}
+- generative_ai: {use_case.generative_ai}
+- external_provider: {use_case.external_provider}
+- data_outside_ksa: {use_case.data_outside_ksa}
+- high_impact_decision: {use_case.high_impact_decision}
+- user_facing_chat: {use_case.user_facing_chat}
+- research_purpose: {use_case.research_purpose}
 
 Supporting documentation:
 {use_case.documentation or "(none provided)"}
@@ -33,7 +44,8 @@ def build_compliance_context(compliance: PolicyComplianceResult) -> str:
     return f"""Policy Compliance Check (already completed)
 =============================================
 Status: {compliance.status.value}
-Violated policies: {", ".join(compliance.violated_policies) or "none"}
-Satisfied policies: {", ".join(compliance.satisfied_policies) or "none"}
+Violated (FAIL) controls: {", ".join(compliance.violated_policies) or "none"}
+Needs review controls: {", ".join(compliance.review_policies) or "none"}
+Satisfied (PASS) controls: {", ".join(compliance.satisfied_policies) or "none"}
 Rationale: {compliance.rationale}
 """

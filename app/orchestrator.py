@@ -32,7 +32,7 @@ class InvalidApprovalStateError(RuntimeError):
 
 
 class GovernanceOrchestrator:
-    """Runs the governance pipeline. Agents (and the OpenRouter client they
+    """Runs the governance pipeline. Agents (and the OpenAI client they
     need) are created lazily, so simply instantiating the orchestrator to
     call `apply_human_decision` does not require an API key to be set."""
 

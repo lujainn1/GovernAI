@@ -116,7 +116,8 @@
 .badge-approve,
 .badge-completed,
 .badge-approved_by_human,
-.badge-compliant {
+.badge-compliant,
+.badge-pass {
   background: var(--success-bg);
   color: var(--success);
 }
@@ -124,9 +125,15 @@
 .badge-medium,
 .badge-require_human_approval,
 .badge-pending_human_approval,
-.badge-partially_compliant {
+.badge-partially_compliant,
+.badge-review {
   background: var(--warning-bg);
   color: var(--warning);
+}
+
+.badge-not_applicable {
+  background: var(--code-bg);
+  color: var(--text);
 }
 
 .badge-high,
@@ -134,7 +141,8 @@
 .badge-block,
 .badge-blocked,
 .badge-rejected_by_human,
-.badge-non_compliant {
+.badge-non_compliant,
+.badge-fail {
   background: var(--danger-bg);
   color: var(--danger);
 }
@@ -233,6 +241,50 @@
   font-size: 13px;
 }
 
+.checkbox-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.checkbox-field {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.checkbox-field:has(input:checked) {
+  border-color: var(--accent-border);
+  background: var(--accent-bg);
+}
+
+.checkbox-field input[type='checkbox'] {
+  margin-top: 3px;
+  flex-shrink: 0;
+}
+
+.checkbox-field span {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.checkbox-field strong {
+  font-size: 14px;
+  color: var(--text-h);
+  font-weight: 600;
+}
+
+.checkbox-field .hint {
+  font-size: 12px;
+  color: var(--text);
+}
+
 .form-actions {
   margin-top: 24px;
   display: flex;
@@ -317,4 +369,66 @@
   padding: 40px;
   text-align: center;
   color: var(--text);
+}
+
+/* --- risk register / control evaluation tables --------------------------- */
+
+.scroll-table {
+  max-height: 420px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-top: 10px;
+}
+
+.scroll-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.scroll-table th {
+  position: sticky;
+  top: 0;
+  text-align: left;
+  background: var(--bg);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+  padding: 8px 10px;
+}
+
+.scroll-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+
+.scroll-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.scroll-table tbody tr:hover {
+  background: var(--bg-subtle);
+}
+
+.mono-id {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text-h);
+  white-space: nowrap;
+}
+
+.result-count-summary {
+  display: flex;
+  gap: 16px;
+  margin: 10px 0;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.result-count-summary strong {
+  color: var(--text-h);
 }

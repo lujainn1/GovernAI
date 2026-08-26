@@ -1,9 +1,9 @@
-"""Tool: read-only access to the risk-scoring rule set.
+"""Tool: read-only access to the SDAIA-derived risk library.
 
 Backed by data/risk_rules.yaml. Exposed to the Risk Assessment Agent as an
-OpenAI-style callable tool. The agent is expected to use these rules as
-guidance for scoring; the platform does not force a purely mechanical score
-so that the LLM can reason about context the keyword rules miss.
+OpenAI-style callable tool for background/citation. Which risks actually
+apply to a given use case, and their score, is decided deterministically
+by app/tools/risk_engine.py - not by the LLM.
 """
 from functools import lru_cache
 from typing import Any, Dict, List, Optional
@@ -19,17 +19,17 @@ def _load_risk_rules() -> Dict[str, Any]:
         return yaml.safe_load(f) or {}
 
 
-def get_risk_rules(category: Optional[str] = None) -> List[Dict[str, Any]]:
-    """Return risk-scoring rules, optionally filtered by category.
+def get_risk_rules(domain: Optional[str] = None) -> List[Dict[str, Any]]:
+    """Return risk library entries, optionally filtered by domain.
 
     Args:
-        category: optional category filter (e.g. data_sensitivity, autonomy,
-            consequential_decisions, external_exposure, third_party_dependency,
-            system_access, scale).
+        domain: optional domain filter, e.g. Data, Algorithm, Human,
+            Security, "Third Party", Compliance, Legal, Operational,
+            Reputational, "Social/Environmental", Accountability, GenAI.
     """
-    rules = _load_risk_rules().get("risk_rules", [])
-    if category:
-        rules = [r for r in rules if r.get("category") == category]
+    rules = _load_risk_rules().get("risk_library", [])
+    if domain:
+        rules = [r for r in rules if r.get("domain", "").lower() == domain.lower()]
     return rules
 
 
@@ -43,18 +43,19 @@ GET_RISK_RULES_SCHEMA = {
     "function": {
         "name": "get_risk_rules",
         "description": (
-            "Retrieve the organization's risk-scoring rules used to evaluate "
-            "AI use cases, optionally filtered by category."
+            "Retrieve entries from the SDAIA-derived risk library for background/citation, "
+            "optionally filtered by domain. The overall risk level and score for this "
+            "submission are already computed deterministically - this tool does not change them."
         ),
         "parameters": {
             "type": "object",
             "properties": {
-                "category": {
+                "domain": {
                     "type": "string",
                     "description": (
-                        "Optional category filter: data_sensitivity, autonomy, "
-                        "consequential_decisions, external_exposure, "
-                        "third_party_dependency, system_access, or scale."
+                        "Optional domain filter: Data, Algorithm, Human, Security, "
+                        "Third Party, Compliance, Legal, Operational, Reputational, "
+                        "Social/Environmental, Accountability, or GenAI."
                     ),
                 },
             },

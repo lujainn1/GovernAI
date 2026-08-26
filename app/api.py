@@ -39,6 +39,15 @@ class UseCaseSubmission(BaseModel):
     deployment_context: Optional[str] = None
     autonomy_level: Optional[str] = None
     documentation: Optional[str] = None
+    personal_data: bool = False
+    sensitive_data: bool = False
+    generative_ai: bool = False
+    external_provider: bool = False
+    data_outside_ksa: bool = False
+    high_impact_decision: bool = False
+    user_facing_chat: bool = False
+    research_purpose: bool = False
+    deployment_status: str = "development"
 
 
 class ApprovalRequest(BaseModel):
