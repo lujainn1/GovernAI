@@ -21,11 +21,8 @@ AUDIT_LOG_FILE = DATA_DIR / "audit_log.jsonl"
 
 REPORTS_DIR.mkdir(parents=True, exist_ok=True)
 
-# --- OpenRouter (LLM provider) ---------------------------------------------
-OPENROUTER_API_KEY = os.environ.get("OPENROUTER_API_KEY")
-OPENROUTER_BASE_URL = os.environ.get("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
-OPENROUTER_MODEL = os.environ.get("OPENROUTER_MODEL", "openai/gpt-4o-mini")
-OPENROUTER_SITE_URL = os.environ.get("OPENROUTER_SITE_URL", "https://github.com/lujainn1/governai")
-OPENROUTER_APP_NAME = os.environ.get("OPENROUTER_APP_NAME", "GovernAI")
+# --- OpenAI (LLM provider) --------------------------------------------------
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
+OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
 
 MAX_TOOL_ITERATIONS = int(os.environ.get("GOVERNAI_MAX_TOOL_ITERATIONS", "5"))

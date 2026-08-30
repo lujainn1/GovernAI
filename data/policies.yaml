@@ -1,100 +1,2271 @@
-# Organizational AI governance policy repository.
-# The Policy Compliance Agent reads this file (via the get_policies tool)
-# to check an AI use case against organizational standards.
-
 policies:
-  - id: POL-001
-    title: Personal Data Minimization
-    category: data_privacy
-    description: >
-      AI use cases that process personal data must collect and retain only
-      the data strictly necessary for the stated purpose, and must define a
-      retention period.
-    min_risk_level: low
-    requires:
-      - documented_data_retention_period
-      - lawful_basis_for_processing
+- id: POL-001
+  title: Personal Data Minimization
+  category: data_privacy
+  description: 'AI use cases that process personal data must collect and retain only
+    the data strictly necessary for the stated purpose, and must define a retention
+    period.
 
-  - id: POL-002
-    title: Sensitive Data Encryption
-    category: security
-    description: >
-      Any use case that stores or transmits sensitive personal data
-      (health, financial, biometric, government ID) must use encryption at
-      rest and in transit.
-    min_risk_level: medium
-    requires:
-      - encryption_at_rest
-      - encryption_in_transit
+    '
+  min_risk_level: low
+  requires:
+  - documented_data_retention_period
+  - lawful_basis_for_processing
+- id: POL-002
+  title: Sensitive Data Encryption
+  category: security
+  description: 'Any use case that stores or transmits sensitive personal data (health,
+    financial, biometric, government ID) must use encryption at rest and in transit.
 
-  - id: POL-003
-    title: Human Oversight for High-Risk Decisions
-    category: human_oversight
-    description: >
-      AI systems that make or materially influence decisions affecting
-      individuals' legal rights, employment, credit, or access to services
-      must keep a human in the loop and must not operate fully autonomously.
-    min_risk_level: high
-    requires:
-      - human_in_the_loop
-      - documented_appeal_process
+    '
+  min_risk_level: medium
+  requires:
+  - encryption_at_rest
+  - encryption_in_transit
+- id: POL-003
+  title: Human Oversight for High-Risk Decisions
+  category: human_oversight
+  description: 'AI systems that make or materially influence decisions affecting individuals''
+    legal rights, employment, credit, or access to services must keep a human in the
+    loop and must not operate fully autonomously.
 
-  - id: POL-004
-    title: Third-Party Model and Data Vetting
-    category: third_party_data
-    description: >
-      Use cases relying on third-party models, APIs, or data providers must
-      document the vendor, its data-handling terms, and confirm no
-      restricted data is shared with the vendor without an approved data
-      processing agreement.
-    min_risk_level: low
-    requires:
-      - vendor_documented
-      - data_processing_agreement_if_needed
+    '
+  min_risk_level: high
+  requires:
+  - human_in_the_loop
+  - documented_appeal_process
+- id: POL-004
+  title: Third-Party Model and Data Vetting
+  category: third_party_data
+  description: 'Use cases relying on third-party models, APIs, or data providers must
+    document the vendor, its data-handling terms, and confirm no restricted data is
+    shared with the vendor without an approved data processing agreement.
 
-  - id: POL-005
-    title: Explainability and Transparency
-    category: transparency
-    description: >
-      Use cases that affect individuals must be able to provide a
-      plain-language explanation of how the AI reached its output, and
-      users must be informed they are interacting with an AI system.
-    min_risk_level: medium
-    requires:
-      - explanation_available
-      - ai_disclosure_to_end_users
+    '
+  min_risk_level: low
+  requires:
+  - vendor_documented
+  - data_processing_agreement_if_needed
+- id: POL-005
+  title: Explainability and Transparency
+  category: transparency
+  description: 'Use cases that affect individuals must be able to provide a plain-language
+    explanation of how the AI reached its output, and users must be informed they
+    are interacting with an AI system.
 
-  - id: POL-006
-    title: Bias and Fairness Testing
-    category: fairness
-    description: >
-      Use cases that make decisions about individuals (hiring, lending,
-      access, pricing) must undergo documented bias/fairness testing before
-      deployment and on a recurring basis.
-    min_risk_level: high
-    requires:
-      - bias_testing_completed
+    '
+  min_risk_level: medium
+  requires:
+  - explanation_available
+  - ai_disclosure_to_end_users
+- id: POL-006
+  title: Bias and Fairness Testing
+  category: fairness
+  description: 'Use cases that make decisions about individuals (hiring, lending,
+    access, pricing) must undergo documented bias/fairness testing before deployment
+    and on a recurring basis.
 
-  - id: POL-007
-    title: Least-Privilege Tool and System Access
-    category: security
-    description: >
-      Autonomous or semi-autonomous AI agents that call tools, APIs, or
-      systems must be granted the minimum permissions required for their
-      task, and destructive or financial actions require explicit
-      authorization scopes.
-    min_risk_level: medium
-    requires:
-      - least_privilege_permissions
-      - authorization_scope_for_sensitive_actions
+    '
+  min_risk_level: high
+  requires:
+  - bias_testing_completed
+- id: POL-007
+  title: Least-Privilege Tool and System Access
+  category: security
+  description: 'Autonomous or semi-autonomous AI agents that call tools, APIs, or
+    systems must be granted the minimum permissions required for their task, and destructive
+    or financial actions require explicit authorization scopes.
 
-  - id: POL-008
-    title: Audit Logging
-    category: transparency
-    description: >
-      Every governed AI use case must produce an audit trail of its
-      inputs, key decisions, and any human approvals, retained for
-      compliance review.
-    min_risk_level: low
-    requires:
-      - audit_logging_enabled
+    '
+  min_risk_level: medium
+  requires:
+  - least_privilege_permissions
+  - authorization_scope_for_sensitive_actions
+- id: POL-008
+  title: Audit Logging
+  category: transparency
+  description: 'Every governed AI use case must produce an audit trail of its inputs,
+    key decisions, and any human approvals, retained for compliance review.
+
+    '
+  min_risk_level: low
+  requires:
+  - audit_logging_enabled
+- id: POL-009
+  title: Data Minimization
+  category: data_privacy
+  description: Only personal data necessary for the stated AI processing purpose should
+    be used.
+  status: active
+  coverage: 90
+  min_risk_level: low
+- id: PD.1
+  title: Oversight design / RACI
+  category: accountability_responsibility
+  principle: Accountability & Responsibility
+  module: AI_ETHICS
+  lifecycle_phase: plan_design
+  description: Define an appropriate level of human oversight for the AI use case.
+  applies_when:
+  - always
+  evidence_required:
+  - Oversight design / RACI
+  requires:
+  - oversight_design_raci
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: PD.2
+  title: Human intervention mechanism
+  category: accountability_responsibility
+  principle: Accountability & Responsibility
+  module: AI_ETHICS
+  lifecycle_phase: plan_design
+  description: Prevent overreliance on AI by providing meaningful human intervention.
+  applies_when:
+  - always
+  evidence_required:
+  - Human intervention mechanism
+  requires:
+  - human_intervention_mechanism
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: PD.3
+  title: Oversight KPIs and owners
+  category: accountability_responsibility
+  principle: Accountability & Responsibility
+  module: AI_ETHICS
+  lifecycle_phase: plan_design
+  description: Define oversight processes, KPIs, and responsible parties.
+  applies_when:
+  - always
+  evidence_required:
+  - Oversight KPIs and owners
+  requires:
+  - oversight_kpis_and_owners
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: PD.4
+  title: Abort/override procedure
+  category: accountability_responsibility
+  principle: Accountability & Responsibility
+  module: AI_ETHICS
+  lifecycle_phase: plan_design
+  description: Define how authorized users can stop, override, or intervene when the
+    system behaves incorrectly.
+  applies_when:
+  - always
+  evidence_required:
+  - Abort/override procedure
+  requires:
+  - abort_override_procedure
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: PD.5
+  title: Liability/data-subject assessment
+  category: accountability_responsibility
+  principle: Accountability & Responsibility
+  module: AI_ETHICS
+  lifecycle_phase: plan_design
+  description: Address liability and protection of affected data subjects.
+  applies_when:
+  - always
+  evidence_required:
+  - Liability/data-subject assessment
+  requires:
+  - liability_data_subject_assessment
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: PD.6
+  title: Threshold/fallback rules
+  category: accountability_responsibility
+  principle: Accountability & Responsibility
+  module: AI_ETHICS
+  lifecycle_phase: plan_design
+  description: Set KPI thresholds and fallback triggers for alternative actions.
+  applies_when:
+  - always
+  evidence_required:
+  - Threshold/fallback rules
+  requires:
+  - threshold_fallback_rules
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: PD.7
+  title: Training record
+  category: accountability_responsibility
+  principle: Accountability & Responsibility
+  module: AI_ETHICS
+  lifecycle_phase: plan_design
+  description: Provide accountability-related training and education.
+  applies_when:
+  - always
+  evidence_required:
+  - Training record
+  requires:
+  - training_record
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: PD.8
+  title: Governance mapping
+  category: accountability_responsibility
+  principle: Accountability & Responsibility
+  module: AI_ETHICS
+  lifecycle_phase: plan_design
+  description: Align the AI governance structure with the applicable national AI ethics
+    governance mechanism.
+  applies_when:
+  - always
+  evidence_required:
+  - Governance mapping
+  requires:
+  - governance_mapping
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: PD.9
+  title: Audit plan
+  category: accountability_responsibility
+  principle: Accountability & Responsibility
+  module: AI_ETHICS
+  lifecycle_phase: plan_design
+  description: Include internal or external audit mechanisms in the governance structure.
+  applies_when:
+  - always
+  evidence_required:
+  - Audit plan
+  requires:
+  - audit_plan
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: PD.10
+  title: Bias prevention plan
+  category: fairness
+  principle: Fairness
+  module: AI_ETHICS
+  lifecycle_phase: plan_design
+  description: Establish a strategy to prevent or reduce unfair bias in both data
+    and algorithm design.
+  applies_when:
+  - always
+  evidence_required:
+  - Bias prevention plan
+  requires:
+  - bias_prevention_plan
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: PD.11
+  title: Sensitive-attribute inventory / thresholds
+  category: fairness
+  principle: Fairness
+  module: AI_ETHICS
+  lifecycle_phase: plan_design
+  description: Identify sensitive attributes and disadvantaged groups; define fairness
+    thresholds.
+  applies_when:
+  - always
+  evidence_required:
+  - Sensitive-attribute inventory / thresholds
+  requires:
+  - sensitive_attribute_inventory_thresholds
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: PD.12
+  title: Fairness metrics
+  category: fairness
+  principle: Fairness
+  module: AI_ETHICS
+  lifecycle_phase: plan_design
+  description: Define measurable fairness KPIs.
+  applies_when:
+  - always
+  evidence_required:
+  - Fairness metrics
+  requires:
+  - fairness_metrics
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: PD.13
+  title: Stakeholder participation record
+  category: fairness
+  principle: Fairness
+  module: AI_ETHICS
+  lifecycle_phase: plan_design
+  description: Include relevant stakeholders in AI system development and use.
+  applies_when:
+  - always
+  evidence_required:
+  - Stakeholder participation record
+  requires:
+  - stakeholder_participation_record
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: PD.14
+  title: Human-rights/cultural impact assessment
+  category: humanity
+  principle: Humanity
+  module: AI_ETHICS
+  lifecycle_phase: plan_design
+  description: Assess impacts on fundamental rights and Saudi cultural values; define
+    recovery measures.
+  applies_when:
+  - always
+  evidence_required:
+  - Human-rights/cultural impact assessment
+  requires:
+  - human_rights_cultural_impact_assessment
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: PD.15
+  title: Anti-deception / autonomy controls
+  category: humanity
+  principle: Humanity
+  module: AI_ETHICS
+  lifecycle_phase: plan_design
+  description: Prevent deception and unjustified impairment of users' freedom of choice.
+  applies_when:
+  - always
+  evidence_required:
+  - Anti-deception / autonomy controls
+  requires:
+  - anti_deception_autonomy_controls
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: PD.16
+  title: Compliance/standards mapping
+  category: privacy_security
+  principle: Privacy & Security
+  module: AI_ETHICS
+  lifecycle_phase: plan_design
+  description: Map the system to relevant standards, laws, policies, and protocols.
+  applies_when:
+  - always
+  evidence_required:
+  - Compliance/standards mapping
+  requires:
+  - compliance_standards_mapping
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: PD.17
+  title: Data-governance procedures
+  category: privacy_security
+  principle: Privacy & Security
+  module: AI_ETHICS
+  lifecycle_phase: plan_design
+  description: Use formal data-governance procedures and applicable national data/privacy
+    standards.
+  applies_when:
+  - always
+  evidence_required:
+  - Data-governance procedures
+  requires:
+  - data_governance_procedures
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: PD.18
+  title: IAM controls and audit logging
+  category: privacy_security
+  principle: Privacy & Security
+  module: AI_ETHICS
+  lifecycle_phase: plan_design
+  description: Implement access controls that satisfy security/privacy needs and maintain
+    logs for audit/debugging.
+  applies_when:
+  - always
+  evidence_required:
+  - IAM controls and audit logging
+  requires:
+  - iam_controls_and_audit_logging
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: PD.19
+  title: Risk-management plan
+  category: reliability_safety
+  principle: Reliability & Safety
+  module: AI_ETHICS
+  lifecycle_phase: plan_design
+  description: Define an AI risk-management strategy with tiers, KPIs, assessment,
+    treatment, and mitigation.
+  applies_when:
+  - always
+  evidence_required:
+  - Risk-management plan
+  requires:
+  - risk_management_plan
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: PD.20
+  title: Harm assessment
+  category: reliability_safety
+  principle: Reliability & Safety
+  module: AI_ETHICS
+  lifecycle_phase: plan_design
+  description: Assess potential harm, affected parties, likelihood, and severity.
+  applies_when:
+  - always
+  evidence_required:
+  - Harm assessment
+  requires:
+  - harm_assessment
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: PD.21
+  title: Failure/inaccuracy assessment
+  category: reliability_safety
+  principle: Reliability & Safety
+  module: AI_ETHICS
+  lifecycle_phase: plan_design
+  description: Assess likelihood of inaccurate results, failures, or reinforcement
+    of societal bias.
+  applies_when:
+  - always
+  evidence_required:
+  - Failure/inaccuracy assessment
+  requires:
+  - failure_inaccuracy_assessment
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: PD.22
+  title: Social/environmental impact assessment
+  category: social_environmental_benefits
+  principle: Social & Environmental Benefits
+  module: AI_ETHICS
+  lifecycle_phase: plan_design
+  description: Assess potential harm to society, the environment, living creatures,
+    and affected persons.
+  applies_when:
+  - always
+  evidence_required:
+  - Social/environmental impact assessment
+  requires:
+  - social_environmental_impact_assessment
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: PD.23
+  title: Business alignment evidence
+  category: transparency_explainability
+  principle: Transparency & Explainability
+  module: AI_ETHICS
+  lifecycle_phase: plan_design
+  description: Confirm the AI business model aligns with organizational mission, vision,
+    and code of conduct.
+  applies_when:
+  - always
+  evidence_required:
+  - Business alignment evidence
+  requires:
+  - business_alignment_evidence
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: PD.24
+  title: Interpretability/explainability design
+  category: transparency_explainability
+  principle: Transparency & Explainability
+  module: AI_ETHICS
+  lifecycle_phase: plan_design
+  description: Design the system so relevant data, algorithms, outputs, and decisions
+    can be explained.
+  applies_when:
+  - always
+  evidence_required:
+  - Interpretability/explainability design
+  requires:
+  - interpretability_explainability_design
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: PD.25
+  title: UX risk review
+  category: transparency_explainability
+  principle: Transparency & Explainability
+  module: AI_ETHICS
+  lifecycle_phase: plan_design
+  description: Design user experience to reduce confusion, confirmation bias, and
+    cognitive fatigue.
+  applies_when:
+  - always
+  evidence_required:
+  - UX risk review
+  requires:
+  - ux_risk_review
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: PD.26
+  title: Trade-off log
+  category: fairness
+  principle: Fairness
+  module: AI_ETHICS
+  lifecycle_phase: plan_design
+  description: Document material trade-offs made during system design.
+  applies_when:
+  - always
+  evidence_required:
+  - Trade-off log
+  requires:
+  - trade_off_log
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: PD.27
+  title: Privacy impact assessment
+  category: privacy_security
+  principle: Privacy & Security
+  module: AI_ETHICS
+  lifecycle_phase: plan_design
+  description: Establish a privacy-impact assessment mechanism.
+  applies_when:
+  - always
+  evidence_required:
+  - Privacy impact assessment
+  requires:
+  - privacy_impact_assessment
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: PD.28
+  title: Human-centric data-management review
+  category: humanity
+  principle: Humanity
+  module: AI_ETHICS
+  lifecycle_phase: plan_design
+  description: Review the data-management approach against human-centric values and
+    Saudi data regulations.
+  applies_when:
+  - always
+  evidence_required:
+  - Human-centric data-management review
+  requires:
+  - human_centric_data_management_review
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: PID.1
+  title: Privacy issue detection
+  category: privacy_security
+  principle: Privacy & Security
+  module: AI_ETHICS
+  lifecycle_phase: prepare_input_data
+  description: Detect and flag privacy/protection issues during data collection and
+    processing.
+  applies_when:
+  - always
+  evidence_required:
+  - Privacy issue detection
+  requires:
+  - privacy_issue_detection
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: PID.2
+  title: Data-scope/classification review
+  category: privacy_security
+  principle: Privacy & Security
+  module: AI_ETHICS
+  lifecycle_phase: prepare_input_data
+  description: Review the scope and classification/category of input data.
+  applies_when:
+  - always
+  evidence_required:
+  - Data-scope/classification review
+  requires:
+  - data_scope_classification_review
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: PID.3
+  title: PII/sensitive-data inventory and minimization
+  category: privacy_security
+  principle: Privacy & Security
+  module: AI_ETHICS
+  lifecycle_phase: prepare_input_data
+  description: Identify personal/sensitive data and minimize its use for training
+    or operation.
+  applies_when:
+  - always
+  evidence_required:
+  - PII/sensitive-data inventory and minimization
+  requires:
+  - pii_sensitive_data_inventory_and_minimization
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: PID.4
+  title: Lawful-use/consent controls
+  category: privacy_security
+  principle: Privacy & Security
+  module: AI_ETHICS
+  lifecycle_phase: prepare_input_data
+  description: Control personal-data use, including consent/withdrawal where applicable.
+  applies_when:
+  - always
+  evidence_required:
+  - Lawful-use/consent controls
+  requires:
+  - lawful_use_consent_controls
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: PID.5
+  title: Security testing / controls
+  category: privacy_security
+  principle: Privacy & Security
+  module: AI_ETHICS
+  lifecycle_phase: prepare_input_data
+  description: Protect confidentiality, privacy, integrity, and security even under
+    adversarial conditions.
+  applies_when:
+  - always
+  evidence_required:
+  - Security testing / controls
+  requires:
+  - security_testing_controls
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: PID.6
+  title: Source/provenance and quality review
+  category: privacy_security
+  principle: Privacy & Security
+  module: AI_ETHICS
+  lifecycle_phase: prepare_input_data
+  description: Assess the quality and provenance of acquired data.
+  applies_when:
+  - always
+  evidence_required:
+  - Source/provenance and quality review
+  requires:
+  - source_provenance_and_quality_review
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: PID.7
+  title: Post-training analysis capability
+  category: transparency_explainability
+  principle: Transparency & Explainability
+  module: AI_ETHICS
+  lifecycle_phase: prepare_input_data
+  description: Ensure the data can support later analysis and explanation after training/testing.
+  applies_when:
+  - always
+  evidence_required:
+  - Post-training analysis capability
+  requires:
+  - post_training_analysis_capability
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: PID.8
+  title: Representativeness assessment
+  category: fairness
+  principle: Fairness
+  module: AI_ETHICS
+  lifecycle_phase: prepare_input_data
+  description: Review dataset diversity and inclusion.
+  applies_when:
+  - always
+  evidence_required:
+  - Representativeness assessment
+  requires:
+  - representativeness_assessment
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: PID.9
+  title: Data quality sign-off
+  category: accountability_responsibility
+  principle: Accountability & Responsibility
+  module: AI_ETHICS
+  lifecycle_phase: prepare_input_data
+  description: Verify integrity, quality, accuracy, provenance, and currency of collected
+    data.
+  applies_when:
+  - always
+  evidence_required:
+  - Data quality sign-off
+  requires:
+  - data_quality_sign_off
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: PID.10
+  title: Proxy-variable analysis
+  category: fairness
+  principle: Fairness
+  module: AI_ETHICS
+  lifecycle_phase: prepare_input_data
+  description: Analyze proxy variables that may indirectly encode sensitive attributes.
+  applies_when:
+  - always
+  evidence_required:
+  - Proxy-variable analysis
+  requires:
+  - proxy_variable_analysis
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: PID.11
+  title: Data handling/acquisition review
+  category: humanity
+  principle: Humanity
+  module: AI_ETHICS
+  lifecycle_phase: prepare_input_data
+  description: Verify data classification, processing, access, and acquisition are
+    appropriate.
+  applies_when:
+  - always
+  evidence_required:
+  - Data handling/acquisition review
+  requires:
+  - data_handling_acquisition_review
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: PID.12
+  title: Rights/culture validation
+  category: humanity
+  principle: Humanity
+  module: AI_ETHICS
+  lifecycle_phase: prepare_input_data
+  description: Validate that data/model design respects fundamental rights and Saudi
+    cultural values.
+  applies_when:
+  - always
+  evidence_required:
+  - Rights/culture validation
+  requires:
+  - rights_culture_validation
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: PID.13
+  title: Data classification evidence
+  category: social_environmental_benefits
+  principle: Social & Environmental Benefits
+  module: AI_ETHICS
+  lifecycle_phase: prepare_input_data
+  description: Classify data according to SDAIA recommendations or document the alternative
+    standard used.
+  applies_when:
+  - always
+  evidence_required:
+  - Data classification evidence
+  requires:
+  - data_classification_evidence
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: PID.14
+  title: Data quality metrics
+  category: reliability_safety
+  principle: Reliability & Safety
+  module: AI_ETHICS
+  lifecycle_phase: prepare_input_data
+  description: Measure data-sample quality, accuracy, relevance, and credibility.
+  applies_when:
+  - always
+  evidence_required:
+  - Data quality metrics
+  requires:
+  - data_quality_metrics
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: BV.1
+  title: Stress/adversarial tests and fallback evidence
+  category: reliability_safety
+  principle: Reliability & Safety
+  module: AI_ETHICS
+  lifecycle_phase: build_validate
+  description: Test unexpected/adversarial conditions and validate fallback behavior.
+  applies_when:
+  - always
+  evidence_required:
+  - Stress/adversarial tests and fallback evidence
+  requires:
+  - stress_adversarial_tests_and_fallback_evidence
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: BV.2
+  title: Failure-response procedure
+  category: reliability_safety
+  principle: Reliability & Safety
+  module: AI_ETHICS
+  lifecycle_phase: build_validate
+  description: Define and test actions to take when the AI system fails.
+  applies_when:
+  - always
+  evidence_required:
+  - Failure-response procedure
+  requires:
+  - failure_response_procedure
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: BV.3
+  title: Failure detection tests
+  category: reliability_safety
+  principle: Reliability & Safety
+  module: AI_ETHICS
+  lifecycle_phase: build_validate
+  description: Define and test how failure conditions are detected across contexts.
+  applies_when:
+  - always
+  evidence_required:
+  - Failure detection tests
+  requires:
+  - failure_detection_tests
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: BV.4
+  title: Reliability communication
+  category: reliability_safety
+  principle: Reliability & Safety
+  module: AI_ETHICS
+  lifecycle_phase: build_validate
+  description: Communicate evidence of system reliability to end-users.
+  applies_when:
+  - always
+  evidence_required:
+  - Reliability communication
+  requires:
+  - reliability_communication
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: BV.5
+  title: Decision explanation
+  category: transparency_explainability
+  principle: Transparency & Explainability
+  module: AI_ETHICS
+  lifecycle_phase: build_validate
+  description: Provide understandable reasons for AI outcomes and decisions.
+  applies_when:
+  - always
+  evidence_required:
+  - Decision explanation
+  requires:
+  - decision_explanation
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: BV.6
+  title: Model interpretability rationale
+  category: transparency_explainability
+  principle: Transparency & Explainability
+  module: AI_ETHICS
+  lifecycle_phase: build_validate
+  description: Prefer an interpretable model/design where appropriate.
+  applies_when:
+  - always
+  evidence_required:
+  - Model interpretability rationale
+  requires:
+  - model_interpretability_rationale
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: BV.7
+  title: Interpretability test
+  category: transparency_explainability
+  principle: Transparency & Explainability
+  module: AI_ETHICS
+  lifecycle_phase: build_validate
+  description: Evaluate interpretability after model training.
+  applies_when:
+  - always
+  evidence_required:
+  - Interpretability test
+  requires:
+  - interpretability_test
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: BV.8
+  title: Model/data understanding evidence
+  category: fairness
+  principle: Fairness
+  module: AI_ETHICS
+  lifecycle_phase: build_validate
+  description: Evaluate tools/techniques that improve understanding of data, model,
+    and performance.
+  applies_when:
+  - always
+  evidence_required:
+  - Model/data understanding evidence
+  requires:
+  - model_data_understanding_evidence
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: BV.9
+  title: Bias metrics and mitigation
+  category: fairness
+  principle: Fairness
+  module: AI_ETHICS
+  lifecycle_phase: build_validate
+  description: Quantitatively test bias/fairness and protect groups from disproportionate
+    negative effects.
+  applies_when:
+  - always
+  evidence_required:
+  - Bias metrics and mitigation
+  requires:
+  - bias_metrics_and_mitigation
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: BV.10
+  title: Anthropomorphism review
+  category: social_environmental_benefits
+  principle: Social & Environmental Benefits
+  module: AI_ETHICS
+  lifecycle_phase: build_validate
+  description: Assess anthropomorphic design and avoid misleading users into treating
+    the system as sentient.
+  applies_when:
+  - always
+  evidence_required:
+  - Anthropomorphism review
+  requires:
+  - anthropomorphism_review
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: BV.11
+  title: Test/UAT sign-off
+  category: accountability_responsibility
+  principle: Accountability & Responsibility
+  module: AI_ETHICS
+  lifecycle_phase: build_validate
+  description: Require stakeholder approval after successful testing and UAT before
+    production.
+  applies_when:
+  - always
+  evidence_required:
+  - Test/UAT sign-off
+  requires:
+  - test_uat_sign_off
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: BV.12
+  title: Sensitive-feature justification
+  category: fairness
+  principle: Fairness
+  module: AI_ETHICS
+  lifecycle_phase: build_validate
+  description: Justify any use of sensitive attributes or proxies in the model.
+  applies_when:
+  - always
+  evidence_required:
+  - Sensitive-feature justification
+  requires:
+  - sensitive_feature_justification
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: BV.13
+  title: Rights/culture design evidence
+  category: humanity
+  principle: Humanity
+  module: AI_ETHICS
+  lifecycle_phase: build_validate
+  description: Ensure algorithmic decision-making aligns with human rights and Saudi
+    cultural values.
+  applies_when:
+  - always
+  evidence_required:
+  - Rights/culture design evidence
+  requires:
+  - rights_culture_design_evidence
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: DM.1
+  title: AI interaction disclosure
+  category: accountability_responsibility
+  principle: Accountability & Responsibility
+  module: AI_ETHICS
+  lifecycle_phase: deploy_monitor
+  description: Disclose to users when they are interacting with a non-human system.
+  applies_when:
+  - always
+  evidence_required:
+  - AI interaction disclosure
+  requires:
+  - ai_interaction_disclosure
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: DM.2
+  title: Vulnerability/security assessment
+  category: privacy_security
+  principle: Privacy & Security
+  module: AI_ETHICS
+  lifecycle_phase: deploy_monitor
+  description: Assess deployed-system vulnerabilities, sensitive-data exposure, and
+    confidentiality risks.
+  applies_when:
+  - always
+  evidence_required:
+  - Vulnerability/security assessment
+  requires:
+  - vulnerability_security_assessment
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: DM.3
+  title: Error-rate threshold monitoring
+  category: accountability_responsibility
+  principle: Accountability & Responsibility
+  module: AI_ETHICS
+  lifecycle_phase: deploy_monitor
+  description: Monitor inaccurate predictions and define unacceptable-error thresholds.
+  applies_when:
+  - always
+  evidence_required:
+  - Error-rate threshold monitoring
+  requires:
+  - error_rate_threshold_monitoring
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: DM.4
+  title: Performance/purpose monitoring
+  category: reliability_safety
+  principle: Reliability & Safety
+  module: AI_ETHICS
+  lifecycle_phase: deploy_monitor
+  description: Monitor whether the system continues meeting intended goals and uses.
+  applies_when:
+  - always
+  evidence_required:
+  - Performance/purpose monitoring
+  requires:
+  - performance_purpose_monitoring
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: DM.5
+  title: Access-role training/qualification
+  category: privacy_security
+  principle: Privacy & Security
+  module: AI_ETHICS
+  lifecycle_phase: deploy_monitor
+  description: Ensure personnel with data access are competent in data-protection
+    requirements.
+  applies_when:
+  - always
+  evidence_required:
+  - Access-role training/qualification
+  requires:
+  - access_role_training_qualification
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: DM.6
+  title: Decision-influence assessment
+  category: transparency_explainability
+  principle: Transparency & Explainability
+  module: AI_ETHICS
+  lifecycle_phase: deploy_monitor
+  description: Assess how strongly the AI influences end-user decisions.
+  applies_when:
+  - always
+  evidence_required:
+  - Decision-influence assessment
+  requires:
+  - decision_influence_assessment
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: DM.7
+  title: User explanation and escalation process
+  category: transparency_explainability
+  principle: Transparency & Explainability
+  module: AI_ETHICS
+  lifecycle_phase: deploy_monitor
+  description: Explain reasons/criteria/benefits behind outputs and provide clear
+    issue-escalation channels.
+  applies_when:
+  - always
+  evidence_required:
+  - User explanation and escalation process
+  requires:
+  - user_explanation_and_escalation_process
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: DM.8
+  title: Feedback loop
+  category: transparency_explainability
+  principle: Transparency & Explainability
+  module: AI_ETHICS
+  lifecycle_phase: deploy_monitor
+  description: Collect end-user feedback and incorporate relevant feedback into system
+    improvement.
+  applies_when:
+  - always
+  evidence_required:
+  - Feedback loop
+  requires:
+  - feedback_loop
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: DM.9
+  title: Fairness monitoring
+  category: fairness
+  principle: Fairness
+  module: AI_ETHICS
+  lifecycle_phase: deploy_monitor
+  description: Continuously monitor bias and fairness quantitatively in production.
+  applies_when:
+  - always
+  evidence_required:
+  - Fairness monitoring
+  requires:
+  - fairness_monitoring
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: DM.10
+  title: Variability/rights assessment
+  category: fairness
+  principle: Fairness
+  module: AI_ETHICS
+  lifecycle_phase: deploy_monitor
+  description: Assess how output variability may affect fundamental rights.
+  applies_when:
+  - always
+  evidence_required:
+  - Variability/rights assessment
+  requires:
+  - variability_rights_assessment
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: DM.11
+  title: Fairness controls
+  category: fairness
+  principle: Fairness
+  module: AI_ETHICS
+  lifecycle_phase: deploy_monitor
+  description: Maintain operational mechanisms that protect fairness.
+  applies_when:
+  - always
+  evidence_required:
+  - Fairness controls
+  requires:
+  - fairness_controls
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: DM.12
+  title: Accessibility evidence
+  category: fairness
+  principle: Fairness
+  module: AI_ETHICS
+  lifecycle_phase: deploy_monitor
+  description: Make AI-system information accessible to users of assistive technologies.
+  applies_when:
+  - always
+  evidence_required:
+  - Accessibility evidence
+  requires:
+  - accessibility_evidence
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: DM.13
+  title: Social/environmental monitoring
+  category: social_environmental_benefits
+  principle: Social & Environmental Benefits
+  module: AI_ETHICS
+  lifecycle_phase: deploy_monitor
+  description: Monitor social and environmental impacts after deployment.
+  applies_when:
+  - always
+  evidence_required:
+  - Social/environmental monitoring
+  requires:
+  - social_environmental_monitoring
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: DM.14
+  title: Human-rights monitoring
+  category: accountability_responsibility
+  principle: Accountability & Responsibility
+  module: AI_ETHICS
+  lifecycle_phase: deploy_monitor
+  description: Maintain mechanisms that protect fundamental human rights.
+  applies_when:
+  - always
+  evidence_required:
+  - Human-rights monitoring
+  requires:
+  - human_rights_monitoring
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: DM.15
+  title: Risk reporting channel
+  category: accountability_responsibility
+  principle: Accountability & Responsibility
+  module: AI_ETHICS
+  lifecycle_phase: deploy_monitor
+  description: Provide channels for workers/third parties to report vulnerabilities,
+    risks, or bias.
+  applies_when:
+  - always
+  evidence_required:
+  - Risk reporting channel
+  requires:
+  - risk_reporting_channel
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: DM.16
+  title: Compliance evidence pack
+  category: accountability_responsibility
+  principle: Accountability & Responsibility
+  module: AI_ETHICS
+  lifecycle_phase: deploy_monitor
+  description: Maintain evidence demonstrating compliance with AI ethics principles.
+  applies_when:
+  - always
+  evidence_required:
+  - Compliance evidence pack
+  requires:
+  - compliance_evidence_pack
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: DM.17
+  title: Redress mechanism
+  category: accountability_responsibility
+  principle: Accountability & Responsibility
+  module: AI_ETHICS
+  lifecycle_phase: deploy_monitor
+  description: Provide redress mechanisms when harm or adverse impact occurs.
+  applies_when:
+  - always
+  evidence_required:
+  - Redress mechanism
+  requires:
+  - redress_mechanism
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: DM.18
+  title: Redress notice
+  category: accountability_responsibility
+  principle: Accountability & Responsibility
+  module: AI_ETHICS
+  lifecycle_phase: deploy_monitor
+  description: Inform users/third parties about available redress opportunities.
+  applies_when:
+  - always
+  evidence_required:
+  - Redress notice
+  requires:
+  - redress_notice
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: DM.19
+  title: Privacy/security monitoring
+  category: privacy_security
+  principle: Privacy & Security
+  module: AI_ETHICS
+  lifecycle_phase: deploy_monitor
+  description: Continuously monitor privacy and security after deployment.
+  applies_when:
+  - always
+  evidence_required:
+  - Privacy/security monitoring
+  requires:
+  - privacy_security_monitoring
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: DM.20
+  title: Periodic rights/culture review
+  category: humanity
+  principle: Humanity
+  module: AI_ETHICS
+  lifecycle_phase: deploy_monitor
+  description: Periodically reassess deployed AI for alignment with human rights and
+    Saudi cultural values.
+  applies_when:
+  - always
+  evidence_required:
+  - Periodic rights/culture review
+  requires:
+  - periodic_rights_culture_review
+  min_risk_level: low
+  source_refs:
+  - S2
+- id: PDPL-01
+  title: Data inventory / field list
+  category: pdpl
+  area: Scope & Inventory
+  module: PDPL
+  description: Identify whether the use case processes personal data directly or indirectly.
+  applies_when:
+  - personal_data == true
+  applies_when_note: Any data about identifiable individuals
+  evidence_required:
+  - Data inventory / field list
+  requires:
+  - data_inventory_field_list
+  min_risk_level: low
+  source_refs:
+  - PDPL + Guide to Saudi PDPL
+- id: PDPL-02
+  title: Sensitive-data inventory
+  category: pdpl
+  area: Scope & Inventory
+  module: PDPL
+  description: Identify sensitive personal data and apply enhanced review.
+  applies_when:
+  - sensitive_data == true
+  applies_when_note: Sensitive categories present
+  evidence_required:
+  - Sensitive-data inventory
+  requires:
+  - sensitive_data_inventory
+  min_risk_level: low
+  source_refs:
+  - PDPL / Implementing Regulations
+  critical: true
+- id: PDPL-03
+  title: Data-flow/RACI
+  category: pdpl
+  area: Governance
+  module: PDPL
+  description: Identify controller, processor, and other recipient roles.
+  applies_when:
+  - personal_data == true
+  applies_when_note: Personal data processing
+  evidence_required:
+  - Data-flow/RACI
+  requires:
+  - data_flow_raci
+  min_risk_level: low
+  source_refs:
+  - Guide for Controllers & Processors
+- id: PDPL-04
+  title: Legal-basis record
+  category: pdpl
+  area: Lawful Processing
+  module: PDPL
+  description: Document a lawful basis for each processing purpose.
+  applies_when:
+  - personal_data == true
+  applies_when_note: Personal data processing
+  evidence_required:
+  - Legal-basis record
+  requires:
+  - legal_basis_record
+  min_risk_level: low
+  source_refs:
+  - PDPL principles
+  critical: true
+- id: PDPL-05
+  title: Consent record / withdrawal process
+  category: pdpl
+  area: Consent
+  module: PDPL
+  description: Where consent is the basis, ensure consent is valid and withdrawal
+    can be handled.
+  applies_when:
+  - consent_basis == true
+  applies_when_note: Consent relied upon
+  evidence_required:
+  - Consent record / withdrawal process
+  requires:
+  - consent_record_withdrawal_process
+  min_risk_level: low
+  source_refs:
+  - PDPL / Implementing Regulations
+- id: PDPL-06
+  title: Privacy notice
+  category: pdpl
+  area: Transparency
+  module: PDPL
+  description: Provide a privacy notice describing collection, use, sharing, retention,
+    and rights.
+  applies_when:
+  - personal_data == true
+  applies_when_note: Personal data processing
+  evidence_required:
+  - Privacy notice
+  requires:
+  - privacy_notice
+  min_risk_level: low
+  source_refs:
+  - Guide to Saudi PDPL
+- id: PDPL-07
+  title: RoPA / purpose statement
+  category: pdpl
+  area: Purpose Limitation
+  module: PDPL
+  description: Define and document a specific processing purpose.
+  applies_when:
+  - personal_data == true
+  applies_when_note: Personal data processing
+  evidence_required:
+  - RoPA / purpose statement
+  requires:
+  - ropa_purpose_statement
+  min_risk_level: low
+  source_refs:
+  - PDPL principles
+- id: PDPL-08
+  title: Secondary-use assessment
+  category: pdpl
+  area: Purpose Compatibility
+  module: PDPL
+  description: Review any new/secondary use for compatibility or another valid legal
+    route.
+  applies_when:
+  - secondary_use == true
+  applies_when_note: Use differs from original purpose
+  evidence_required:
+  - Secondary-use assessment
+  requires:
+  - secondary_use_assessment
+  min_risk_level: low
+  source_refs:
+  - PDPL / Secondary Use Rules where applicable
+- id: PDPL-09
+  title: Field-to-purpose map
+  category: pdpl
+  area: Data Minimization
+  module: PDPL
+  description: Collect/process only data directly necessary for the purpose.
+  applies_when:
+  - personal_data == true
+  applies_when_note: Personal data processing
+  evidence_required:
+  - Field-to-purpose map
+  requires:
+  - field_to_purpose_map
+  min_risk_level: low
+  source_refs:
+  - PDPL Art. 11 / Implementing Reg. Art. 19 / Minimization Guideline
+  critical: true
+- id: PDPL-10
+  title: De-identification design
+  category: pdpl
+  area: Data Minimization
+  module: PDPL
+  description: Avoid identifiers when the purpose can be achieved without identifying
+    the person.
+  applies_when:
+  - identifiers_not_necessary == true
+  applies_when_note: Identifiers not necessary
+  evidence_required:
+  - De-identification design
+  requires:
+  - de_identification_design
+  min_risk_level: low
+  source_refs:
+  - Minimum Personal Data Guideline
+- id: PDPL-11
+  title: Data-quality evidence
+  category: pdpl
+  area: Accuracy
+  module: PDPL
+  description: Keep personal data accurate, complete, and up to date as required.
+  applies_when:
+  - personal_data == true and affects_decisions == true
+  applies_when_note: Personal data affects decisions/services
+  evidence_required:
+  - Data-quality evidence
+  requires:
+  - data_quality_evidence
+  min_risk_level: low
+  source_refs:
+  - PDPL principles / Implementing Regulations
+- id: PDPL-12
+  title: Retention schedule
+  category: pdpl
+  area: Retention
+  module: PDPL
+  description: Define retention periods tied to purpose and legal requirements.
+  applies_when:
+  - personal_data == true
+  applies_when_note: Personal data stored
+  evidence_required:
+  - Retention schedule
+  requires:
+  - retention_schedule
+  min_risk_level: low
+  source_refs:
+  - PDPL principles / RoPA requirements
+- id: PDPL-13
+  title: Destruction record
+  category: pdpl
+  area: Destruction
+  module: PDPL
+  description: Securely destroy personal data when the purpose ends unless lawful
+    retention applies.
+  applies_when:
+  - retention_expired == true
+  applies_when_note: Retention expires
+  evidence_required:
+  - Destruction record
+  requires:
+  - destruction_record
+  min_risk_level: low
+  source_refs:
+  - PDPL / Minimization Guideline
+- id: PDPL-14
+  title: Security controls
+  category: pdpl
+  area: Security
+  module: PDPL
+  description: Implement organizational, administrative, and technical safeguards.
+  applies_when:
+  - personal_data == true
+  applies_when_note: Personal data processing
+  evidence_required:
+  - Security controls
+  requires:
+  - security_controls
+  min_risk_level: low
+  source_refs:
+  - PDPL / Implementing Regulations
+  critical: true
+- id: PDPL-15
+  title: IAM/RBAC evidence
+  category: pdpl
+  area: Access Control
+  module: PDPL
+  description: Restrict access based on need-to-know and minimum privilege.
+  applies_when:
+  - personal_data == true
+  applies_when_note: Personal data accessible to staff/systems
+  evidence_required:
+  - IAM/RBAC evidence
+  requires:
+  - iam_rbac_evidence
+  min_risk_level: low
+  source_refs:
+  - Data Sharing Policy + security obligations
+- id: PDPL-16
+  title: RoPA
+  category: pdpl
+  area: Records
+  module: PDPL
+  description: Maintain an accurate and current Record of Processing Activities (RoPA).
+  applies_when:
+  - personal_data == true
+  applies_when_note: Personal data processing
+  evidence_required:
+  - RoPA
+  requires:
+  - ropa
+  min_risk_level: low
+  source_refs:
+  - Implementing Regulations Art. 33 / PDPL Guide
+- id: PDPL-17
+  title: Completed RoPA fields
+  category: pdpl
+  area: RoPA Content
+  module: PDPL
+  description: Record purposes, categories, recipients, retention, transfers, and
+    security measures.
+  applies_when:
+  - personal_data == true
+  applies_when_note: RoPA required
+  evidence_required:
+  - Completed RoPA fields
+  requires:
+  - completed_ropa_fields
+  min_risk_level: low
+  source_refs:
+  - Implementing Regulations Art. 33
+- id: PDPL-18
+  title: Rights-request procedure/log
+  category: pdpl
+  area: Data Subject Rights
+  module: PDPL
+  description: Provide processes to handle applicable rights requests.
+  applies_when:
+  - personal_data == true
+  applies_when_note: Personal data processing
+  evidence_required:
+  - Rights-request procedure/log
+  requires:
+  - rights_request_procedure_log
+  min_risk_level: low
+  source_refs:
+  - PDPL / Guide
+- id: PDPL-19
+  title: Correction workflow
+  category: pdpl
+  area: Correction
+  module: PDPL
+  description: Provide a process to correct incomplete, inaccurate, or outdated data.
+  applies_when:
+  - personal_data == true
+  applies_when_note: Personal data maintained
+  evidence_required:
+  - Correction workflow
+  requires:
+  - correction_workflow
+  min_risk_level: low
+  source_refs:
+  - Implementing Regulations Art. 22
+- id: PDPL-20
+  title: Disclosure request/record
+  category: pdpl
+  area: Disclosure
+  module: PDPL
+  description: Document and validate the legal basis and scope of personal-data disclosure.
+  applies_when:
+  - data_disclosed == true
+  applies_when_note: Data disclosed to another party
+  evidence_required:
+  - Disclosure request/record
+  requires:
+  - disclosure_request_record
+  min_risk_level: low
+  source_refs:
+  - PDPL / Implementing Regulations
+- id: PDPL-21
+  title: Disclosure field list
+  category: pdpl
+  area: Disclosure Minimization
+  module: PDPL
+  description: Disclose only the personal data necessary for the disclosure purpose.
+  applies_when:
+  - data_disclosed == true
+  applies_when_note: Disclosure occurs
+  evidence_required:
+  - Disclosure field list
+  requires:
+  - disclosure_field_list
+  min_risk_level: low
+  source_refs:
+  - PDPL / Implementing Regulations
+- id: PDPL-22
+  title: Processor agreement / due diligence
+  category: pdpl
+  area: Processors
+  module: PDPL
+  description: Ensure processors act under documented instructions and appropriate
+    safeguards.
+  applies_when:
+  - external_provider == true
+  applies_when_note: External/internal processor used
+  evidence_required:
+  - Processor agreement / due diligence
+  requires:
+  - processor_agreement_due_diligence
+  min_risk_level: low
+  source_refs:
+  - PDPL Guide for Controllers & Processors
+  critical: true
+- id: PDPL-23
+  title: DPIA
+  category: pdpl
+  area: Impact Assessment
+  module: PDPL
+  description: Conduct a data-protection impact assessment when required by the nature/scope/risk
+    of processing.
+  applies_when:
+  - personal_data == true and high_impact_decision == true
+  applies_when_note: High-impact/high-risk personal-data processing
+  evidence_required:
+  - DPIA
+  requires:
+  - dpia
+  min_risk_level: low
+  source_refs:
+  - Implementing Regulations / PDPL Guide
+  critical: true
+- id: PDPL-24
+  title: DPIA content
+  category: pdpl
+  area: Impact Assessment
+  module: PDPL
+  description: Assess nature, sources, scope, necessity, proportionality, impacts,
+    likelihood, and mitigation.
+  applies_when:
+  - dpia_required == true
+  applies_when_note: DPIA triggered
+  evidence_required:
+  - DPIA content
+  requires:
+  - dpia_content
+  min_risk_level: low
+  source_refs:
+  - Implementing Regulations
+- id: PDPL-25
+  title: Incident/breach plan
+  category: pdpl
+  area: Breach Management
+  module: PDPL
+  description: Maintain a process to detect, investigate, contain, and document personal-data
+    breaches.
+  applies_when:
+  - personal_data == true
+  applies_when_note: Personal data processing
+  evidence_required:
+  - Incident/breach plan
+  requires:
+  - incident_breach_plan
+  min_risk_level: low
+  source_refs:
+  - PDPL Guide
+  critical: true
+- id: PDPL-26
+  title: Notification record
+  category: pdpl
+  area: Breach Notification
+  module: PDPL
+  description: Notify the competent authority when the legal notification conditions
+    are met.
+  applies_when:
+  - breach_occurred == true
+  applies_when_note: Notifiable breach
+  evidence_required:
+  - Notification record
+  requires:
+  - notification_record
+  min_risk_level: low
+  source_refs:
+  - PDPL / Implementing Regulations
+  critical: true
+- id: PDPL-27
+  title: DPO appointment / responsibilities
+  category: pdpl
+  area: Data Protection Officer
+  module: PDPL
+  description: Determine whether a DPO must be appointed and document the role when
+    required.
+  applies_when:
+  - dpo_conditions_met == true
+  applies_when_note: DPO conditions met
+  evidence_required:
+  - DPO appointment / responsibilities
+  requires:
+  - dpo_appointment_responsibilities
+  min_risk_level: low
+  source_refs:
+  - Implementing Regulations + DPO rules
+- id: PDPL-28
+  title: Privacy-by-design checklist
+  category: pdpl
+  area: Privacy by Design
+  module: PDPL
+  description: Embed data protection and minimization into system design and collection
+    mechanisms.
+  applies_when:
+  - new_or_changed_system == true
+  applies_when_note: New/changed system
+  evidence_required:
+  - Privacy-by-design checklist
+  requires:
+  - privacy_by_design_checklist
+  min_risk_level: low
+  source_refs:
+  - Minimum Personal Data Guideline
+- id: PDPL-29
+  title: Training evidence
+  category: pdpl
+  area: Training
+  module: PDPL
+  description: Train personnel who collect/process personal data on applicable obligations.
+  applies_when:
+  - personal_data == true
+  applies_when_note: Staff handle personal data
+  evidence_required:
+  - Training evidence
+  requires:
+  - training_evidence
+  min_risk_level: low
+  source_refs:
+  - Minimum Personal Data Guideline / PDPL Guide
+- id: PDPL-30
+  title: De-identification evidence
+  category: pdpl
+  area: Anonymization/Pseudonymization
+  module: PDPL
+  description: Use anonymization or pseudonymization where appropriate to reduce identification
+    risk.
+  applies_when:
+  - identifiers_not_necessary == true
+  applies_when_note: Full identification not necessary
+  evidence_required:
+  - De-identification evidence
+  requires:
+  - de_identification_evidence
+  min_risk_level: low
+  source_refs:
+  - PDPL guidance / research rules
+- id: PDPL-31
+  title: Research processing assessment
+  category: pdpl
+  area: Research/Statistics
+  module: PDPL
+  description: For research/statistical processing, define purpose, minimize data,
+    pseudonymize where possible, and protect rights.
+  applies_when:
+  - research_purpose == true and personal_data == true
+  applies_when_note: Scientific/research/statistical purpose
+  evidence_required:
+  - Research processing assessment
+  requires:
+  - research_processing_assessment
+  min_risk_level: low
+  source_refs:
+  - Implementing Regulations Art. 30
+- id: PDPL-32
+  title: Audit/review log
+  category: pdpl
+  area: Compliance Monitoring
+  module: PDPL
+  description: Periodically review personal-data processing and correct non-compliance.
+  applies_when:
+  - personal_data == true
+  applies_when_note: Ongoing processing
+  evidence_required:
+  - Audit/review log
+  requires:
+  - audit_review_log
+  min_risk_level: low
+  source_refs:
+  - PDPL Guide / Minimization Guideline
+- id: XFER-01
+  title: Data-flow map
+  category: cross_border_transfer
+  area: Cross-Border Scope
+  module: XFER
+  description: Detect whether personal data is transferred, disclosed, or made accessible
+    outside KSA.
+  applies_when:
+  - personal_data == true and data_outside_ksa == true
+  applies_when_note: Personal data leaves/accessible outside KSA
+  evidence_required:
+  - Data-flow map
+  requires:
+  - data_flow_map
+  min_risk_level: low
+  source_refs:
+  - Transfer Regulation
+  critical: true
+- id: XFER-02
+  title: Transfer assessment
+  category: cross_border_transfer
+  area: Purpose & Legal Basis
+  module: XFER
+  description: Document the purpose and legal basis for the external transfer/disclosure.
+  applies_when:
+  - personal_data == true and data_outside_ksa == true
+  applies_when_note: Cross-border transfer
+  evidence_required:
+  - Transfer assessment
+  requires:
+  - transfer_assessment
+  min_risk_level: low
+  source_refs:
+  - Transfer Regulation Art. 7
+  critical: true
+- id: XFER-03
+  title: Legal/regulatory review
+  category: cross_border_transfer
+  area: National/Vital Interests
+  module: XFER
+  description: Confirm transfer does not conflict with national security, vital interests,
+    or other Saudi law.
+  applies_when:
+  - personal_data == true and data_outside_ksa == true
+  applies_when_note: Cross-border transfer
+  evidence_required:
+  - Legal/regulatory review
+  requires:
+  - legal_regulatory_review
+  min_risk_level: low
+  source_refs:
+  - Transfer Regulation
+- id: XFER-04
+  title: Adequacy assessment
+  category: cross_border_transfer
+  area: Adequacy
+  module: XFER
+  description: Determine whether destination provides an adequate level of personal-data
+    protection.
+  applies_when:
+  - personal_data == true and data_outside_ksa == true
+  applies_when_note: Cross-border transfer
+  evidence_required:
+  - Adequacy assessment
+  requires:
+  - adequacy_assessment
+  min_risk_level: low
+  source_refs:
+  - Transfer Regulation
+  critical: true
+- id: XFER-05
+  title: Safeguard evidence
+  category: cross_border_transfer
+  area: Appropriate Safeguards
+  module: XFER
+  description: If needed, use an approved safeguard such as SCCs, BCRs, or accreditation.
+  applies_when:
+  - adequacy_not_confirmed == true
+  applies_when_note: No adequate protection / exemption route
+  evidence_required:
+  - Safeguard evidence
+  requires:
+  - safeguard_evidence
+  min_risk_level: low
+  source_refs:
+  - Transfer Regulation
+  critical: true
+- id: XFER-06
+  title: Transferred-field map
+  category: cross_border_transfer
+  area: Transfer Minimization
+  module: XFER
+  description: Limit transferred data to the minimum necessary for the purpose.
+  applies_when:
+  - personal_data == true and data_outside_ksa == true
+  applies_when_note: Cross-border transfer
+  evidence_required:
+  - Transferred-field map
+  requires:
+  - transferred_field_map
+  min_risk_level: low
+  source_refs:
+  - Transfer Regulation / PDPL minimization
+- id: XFER-07
+  title: Transfer risk assessment
+  category: cross_border_transfer
+  area: Transfer Risk Assessment
+  module: XFER
+  description: Conduct a transfer risk assessment when required, including sensitive
+    data on continuous/large-scale transfers.
+  applies_when:
+  - transfer_risk_assessment_required == true
+  applies_when_note: Transfer risk-assessment trigger met
+  evidence_required:
+  - Transfer risk assessment
+  requires:
+  - transfer_risk_assessment
+  min_risk_level: low
+  source_refs:
+  - Transfer Regulation Art. 7
+- id: XFER-08
+  title: Assessment record
+  category: cross_border_transfer
+  area: Risk Factors
+  module: XFER
+  description: Assess processing nature/geography, safeguards, material/moral impacts,
+    likelihood, and mitigation.
+  applies_when:
+  - transfer_risk_assessment_required == true
+  applies_when_note: Transfer risk assessment
+  evidence_required:
+  - Assessment record
+  requires:
+  - assessment_record
+  min_risk_level: low
+  source_refs:
+  - Transfer Regulation Art. 7
+- id: XFER-09
+  title: Contract/processor controls
+  category: cross_border_transfer
+  area: Subsequent Transfer
+  module: XFER
+  description: Ensure onward/subsequent transfers remain subject to applicable protections.
+  applies_when:
+  - onward_transfer_possible == true
+  applies_when_note: Recipient may onward-transfer data
+  evidence_required:
+  - Contract/processor controls
+  requires:
+  - contract_processor_controls
+  min_risk_level: low
+  source_refs:
+  - Transfer Regulation Art. 5
+- id: XFER-10
+  title: Periodic safeguard review
+  category: cross_border_transfer
+  area: Safeguard Adequacy
+  module: XFER
+  description: Review whether selected safeguards remain effective and sufficient.
+  applies_when:
+  - safeguard_in_place == true
+  applies_when_note: Safeguard used
+  evidence_required:
+  - Periodic safeguard review
+  requires:
+  - periodic_safeguard_review
+  min_risk_level: low
+  source_refs:
+  - Transfer Regulation
+- id: XFER-11
+  title: Stop-transfer procedure
+  category: cross_border_transfer
+  area: Stop Transfer
+  module: XFER
+  description: Stop transfer/disclosure if required safeguards are not implemented
+    or become inadequate.
+  applies_when:
+  - safeguard_failure == true
+  applies_when_note: Safeguard failure
+  evidence_required:
+  - Stop-transfer procedure
+  requires:
+  - stop_transfer_procedure
+  min_risk_level: low
+  source_refs:
+  - Transfer Regulation Art. 6
+  critical: true
+- id: XFER-12
+  title: RoPA/transfer log
+  category: cross_border_transfer
+  area: Transfer Records
+  module: XFER
+  description: Record transfer destination, recipient, legal route, purpose, safeguards,
+    and relevant retention/security details.
+  applies_when:
+  - personal_data == true and data_outside_ksa == true
+  applies_when_note: Cross-border transfer
+  evidence_required:
+  - RoPA/transfer log
+  requires:
+  - ropa_transfer_log
+  min_risk_level: low
+  source_refs:
+  - Implementing Regulations Art. 33 + Transfer Regulation
+- id: GEN-01
+  title: GenAI use-case assessment
+  category: genai
+  area: Responsible Use
+  module: GENAI
+  description: Apply responsible-use and AI-ethics requirements to the GenAI use case.
+  applies_when:
+  - generative_ai == true
+  applies_when_note: LLM/GenAI used
+  evidence_required:
+  - GenAI use-case assessment
+  requires:
+  - genai_use_case_assessment
+  min_risk_level: low
+  source_refs:
+  - SDAIA Generative AI Guidelines + AI Ethics Principles
+- id: GEN-02
+  title: Input-data classification
+  category: genai
+  area: Input Data
+  module: GENAI
+  description: Classify and review prompts/inputs before sending data to a GenAI service.
+  applies_when:
+  - generative_ai == true
+  applies_when_note: GenAI receives organizational data
+  evidence_required:
+  - Input-data classification
+  requires:
+  - input_data_classification
+  min_risk_level: low
+  source_refs:
+  - SDAIA GenAI guidance
+- id: GEN-03
+  title: Input filtering/redaction
+  category: genai
+  area: Personal/Sensitive Data
+  module: GENAI
+  description: Prevent unauthorized or unnecessary submission of personal, sensitive,
+    or classified information.
+  applies_when:
+  - generative_ai == true and personal_data == true
+  applies_when_note: GenAI input may contain protected data
+  evidence_required:
+  - Input filtering/redaction
+  requires:
+  - input_filtering_redaction
+  min_risk_level: low
+  source_refs:
+  - SDAIA GenAI guidance + PDPL
+  critical: true
+- id: GEN-04
+  title: Human/automated validation record
+  category: genai
+  area: Output Validation
+  module: GENAI
+  description: Require verification of material GenAI outputs before operational use.
+  applies_when:
+  - generative_ai == true
+  applies_when_note: Generated output used for work/decision
+  evidence_required:
+  - Human/automated validation record
+  requires:
+  - human_automated_validation_record
+  min_risk_level: low
+  source_refs:
+  - SDAIA GenAI guidance
+- id: GEN-05
+  title: Grounding/evaluation tests
+  category: genai
+  area: Hallucination/Misinformation
+  module: GENAI
+  description: Assess and mitigate inaccurate, fabricated, or misleading generated
+    content.
+  applies_when:
+  - generative_ai == true
+  applies_when_note: Content generation / Q&A
+  evidence_required:
+  - Grounding/evaluation tests
+  requires:
+  - grounding_evaluation_tests
+  min_risk_level: low
+  source_refs:
+  - SDAIA GenAI risk guidance
+- id: GEN-06
+  title: Bias evaluation
+  category: genai
+  area: Bias
+  module: GENAI
+  description: Test generated outputs for bias, discrimination, and stereotyping.
+  applies_when:
+  - generative_ai == true
+  applies_when_note: GenAI affects people/content
+  evidence_required:
+  - Bias evaluation
+  requires:
+  - bias_evaluation
+  min_risk_level: low
+  source_refs:
+  - SDAIA AI Ethics / GenAI guidance
+- id: GEN-07
+  title: Human approval step
+  category: genai
+  area: Human Oversight
+  module: GENAI
+  description: Keep meaningful human oversight for sensitive or high-impact GenAI
+    uses.
+  applies_when:
+  - generative_ai == true and high_impact_decision == true
+  applies_when_note: High-impact GenAI
+  evidence_required:
+  - Human approval step
+  requires:
+  - human_approval_step
+  min_risk_level: low
+  source_refs:
+  - SDAIA AI Ethics / GenAI guidance
+  critical: true
+- id: GEN-08
+  title: Disclosure notice
+  category: genai
+  area: Transparency
+  module: GENAI
+  description: Inform users when relevant that generated content or non-human interaction
+    is involved.
+  applies_when:
+  - generative_ai == true and user_facing_chat == true
+  applies_when_note: User-facing GenAI/chatbot
+  evidence_required:
+  - Disclosure notice
+  requires:
+  - disclosure_notice
+  min_risk_level: low
+  source_refs:
+  - AI Ethics DM.1 / GenAI guidance
+- id: GEN-09
+  title: Security assessment
+  category: genai
+  area: Security
+  module: GENAI
+  description: Assess provider, model, prompt, tool, and data-security risks.
+  applies_when:
+  - generative_ai == true
+  applies_when_note: External/agentic GenAI
+  evidence_required:
+  - Security assessment
+  requires:
+  - security_assessment
+  min_risk_level: low
+  source_refs:
+  - SDAIA AI Ethics / GenAI guidance
+- id: GEN-10
+  title: IP review
+  category: genai
+  area: Intellectual Property
+  module: GENAI
+  description: Review copyright, ownership, licensing, and content-rights risks.
+  applies_when:
+  - generative_ai == true
+  applies_when_note: Generated/ingested protected content
+  evidence_required:
+  - IP review
+  requires:
+  - ip_review
+  min_risk_level: low
+  source_refs:
+  - SDAIA GenAI guidance
+- id: GEN-11
+  title: Audit log
+  category: genai
+  area: Traceability
+  module: GENAI
+  description: Log prompts/actions/outputs at a level appropriate to risk and privacy.
+  applies_when:
+  - generative_ai == true
+  applies_when_note: Material GenAI workflow
+  evidence_required:
+  - Audit log
+  requires:
+  - audit_log
+  min_risk_level: low
+  source_refs:
+  - AI Ethics accountability / GenAI governance
+- id: GEN-12
+  title: Monitoring dashboard/review
+  category: genai
+  area: Monitoring
+  module: GENAI
+  description: Monitor quality, safety, privacy, and model/provider changes after
+    deployment.
+  applies_when:
+  - generative_ai == true and deployment_status == 'production'
+  applies_when_note: Deployed GenAI
+  evidence_required:
+  - Monitoring dashboard/review
+  requires:
+  - monitoring_dashboard_review
+  min_risk_level: low
+  source_refs:
+  - SDAIA AI Ethics / Adoption Framework

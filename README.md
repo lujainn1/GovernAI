@@ -7,7 +7,7 @@ compliance, and operational exposure. GovernAI gives AI governance, risk,
 compliance, and security teams (and the developers building AI systems) a
 repeatable pipeline for reviewing an AI use case before and after it ships.
 
-Three agents, each backed by an LLM via [OpenRouter](https://openrouter.ai),
+Three agents, each backed by an LLM via the [OpenAI API](https://platform.openai.com),
 collaborate on every submission:
 
 - **Risk Assessment Agent** — evaluates the use case and assigns a risk
@@ -38,7 +38,7 @@ logged.
 ## How the agents use tools
 
 Agents don't just free-associate — they call real tools (via OpenAI-style
-function calling through OpenRouter) backed by this repo's data:
+function calling through the OpenAI API) backed by this repo's data:
 
 | Tool | Backing data | Used by |
 |---|---|---|
@@ -52,7 +52,7 @@ function calling through OpenRouter) backed by this repo's data:
 ```
 app/
   agents/
-    base.py            # shared tool-calling loop against OpenRouter
+    base.py            # shared tool-calling loop against OpenAI
     risk_agent.py       # Risk Assessment Agent
     policy_agent.py      # Policy Compliance Agent
     decision_agent.py    # Decision Agent
@@ -84,8 +84,8 @@ source .venv/bin/activate
 pip install -r requirements.txt
 
 cp .env.example .env
-# edit .env and set OPENROUTER_API_KEY (get one at https://openrouter.ai/keys)
-# OPENROUTER_MODEL can be any model slug from https://openrouter.ai/models
+# edit .env and set OPENAI_API_KEY (get one at https://platform.openai.com/api-keys)
+# OPENAI_MODEL can be any OpenAI model, e.g. gpt-4o-mini, gpt-4o, gpt-4.1-mini
 ```
 
 To also run the web UI:
@@ -156,5 +156,5 @@ from the browser instead of the CLI or raw API calls. See
 pytest
 ```
 
-The test suite mocks the OpenRouter client, so it runs without a real API
+The test suite mocks the OpenAI client, so it runs without a real API
 key or network access.
