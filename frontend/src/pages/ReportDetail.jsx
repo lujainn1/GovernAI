@@ -1,139 +1,36 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { approveUseCase, getReport } from '../api.js'
+import {
+  ArrowLeft,
+  CheckCircle2,
+  CheckSquare,
+  ShieldAlert,
+  XCircle,
+} from 'lucide-react'
 
-const ROUTING_FLAG_LABELS = {
-  personal_data: 'Personal data',
-  sensitive_data: 'Sensitive data',
-  generative_ai: 'Generative AI',
-  external_provider: 'External provider',
-  data_outside_ksa: 'Data outside KSA',
-  high_impact_decision: 'High-impact decision',
-  user_facing_chat: 'User-facing chat',
-  research_purpose: 'Research purpose',
-}
+import { approveUseCase, getAuditLog, getReport } from '../api.js'
+import { decisionTone, pretty, statusTone, timeAgo } from '../format.js'
 
-const RESULT_ORDER = { fail: 0, review: 1, not_applicable: 2, pass: 3 }
-
-function List({ items }) {
-  if (!items || items.length === 0) return <p className="hint">None</p>
+function Tags({ items, tone }) {
+  if (!items || items.length === 0) {
+    return <p className="ov-empty-note">None</p>
+  }
   return (
-    <ul className="tag-list">
+    <div className="tag-row">
       {items.map((item) => (
-        <li key={item}>{item}</li>
+        <span className={`tag tag-${tone}`} key={item}>
+          {item}
+        </span>
       ))}
-    </ul>
-  )
-}
-
-function ActiveFlags({ useCase }) {
-  const active = Object.entries(ROUTING_FLAG_LABELS).filter(([field]) => useCase[field])
-  if (active.length === 0) return <p className="hint">None set</p>
-  return (
-    <ul className="tag-list">
-      {active.map(([field, label]) => (
-        <li key={field}>{label}</li>
-      ))}
-    </ul>
-  )
-}
-
-function RiskRegister({ detectedRisks }) {
-  if (!detectedRisks || detectedRisks.length === 0) {
-    return <p className="hint">No named risks were triggered by this submission.</p>
-  }
-  return (
-    <div className="scroll-table">
-      <table>
-        <thead>
-          <tr>
-            <th>Risk</th>
-            <th>Domain</th>
-            <th>L × I = Score</th>
-            <th>Treatment</th>
-          </tr>
-        </thead>
-        <tbody>
-          {detectedRisks.map((risk) => (
-            <tr key={risk.risk_id}>
-              <td>
-                <span className="mono-id">{risk.risk_id}</span> {risk.title}
-              </td>
-              <td>{risk.domain}</td>
-              <td>
-                {risk.likelihood} × {risk.impact} = {risk.inherent_score}/25
-              </td>
-              <td>{risk.treatment}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
     </div>
-  )
-}
-
-function ControlEvaluations({ evaluations }) {
-  if (!evaluations || evaluations.length === 0) {
-    return <p className="hint">No controls were routed for this use case.</p>
-  }
-  const counts = evaluations.reduce((acc, e) => {
-    acc[e.result] = (acc[e.result] || 0) + 1
-    return acc
-  }, {})
-  const sorted = [...evaluations].sort((a, b) => RESULT_ORDER[a.result] - RESULT_ORDER[b.result])
-
-  return (
-    <>
-      <div className="result-count-summary">
-        <span>
-          <strong>{counts.fail || 0}</strong> fail
-        </span>
-        <span>
-          <strong>{counts.review || 0}</strong> review
-        </span>
-        <span>
-          <strong>{counts.pass || 0}</strong> pass
-        </span>
-        <span>
-          <strong>{evaluations.length}</strong> controls evaluated
-        </span>
-      </div>
-      <div className="scroll-table">
-        <table>
-          <thead>
-            <tr>
-              <th>Control</th>
-              <th>Module</th>
-              <th>Result</th>
-              <th>Rationale</th>
-            </tr>
-          </thead>
-          <tbody>
-            {sorted.map((e) => (
-              <tr key={e.control_id}>
-                <td>
-                  <span className="mono-id">{e.control_id}</span>
-                  {e.critical && ' ⚑'}
-                  <br />
-                  {e.principle}
-                </td>
-                <td>{e.module}</td>
-                <td>
-                  <span className={`badge badge-${e.result}`}>{e.result.replaceAll('_', ' ')}</span>
-                </td>
-                <td>{e.rationale}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </>
   )
 }
 
 export default function ReportDetail() {
   const { id } = useParams()
+
   const [report, setReport] = useState(null)
+  const [audit, setAudit] = useState([])
   const [error, setError] = useState(null)
   const [approver, setApprover] = useState('')
   const [notes, setNotes] = useState('')
@@ -143,6 +40,9 @@ export default function ReportDetail() {
     getReport(id)
       .then(setReport)
       .catch((err) => setError(err.message))
+    getAuditLog(id)
+      .then(setAudit)
+      .catch(() => setAudit([]))
   }
 
   useEffect(refresh, [id])
@@ -152,11 +52,18 @@ export default function ReportDetail() {
       setError('Enter an approver name/email before recording a decision.')
       return
     }
+
     setDeciding(true)
     setError(null)
+
     try {
-      const updated = await approveUseCase(id, { approved, approver, notes: notes || null })
+      const updated = await approveUseCase(id, {
+        approved,
+        approver,
+        notes: notes || null,
+      })
       setReport(updated)
+      getAuditLog(id).then(setAudit).catch(() => {})
     } catch (err) {
       setError(err.message)
     } finally {
@@ -166,146 +73,251 @@ export default function ReportDetail() {
 
   if (error && !report) {
     return (
-      <>
-        <Link to="/">&larr; Back to reports</Link>
-        <div className="error-banner" style={{ marginTop: 16 }}>
-          {error}
-        </div>
-      </>
+      <div className="page-rise">
+        <Link className="back-link" to="/reports">
+          <ArrowLeft size={13} />
+          Back to reports
+        </Link>
+        <div className="error-banner">{error}</div>
+      </div>
     )
   }
 
-  if (!report) return <div className="loading">Loading report…</div>
+  if (!report) {
+    return <div className="loading">Loading report…</div>
+  }
 
-  const { use_case, risk_assessment, policy_compliance, decision, status, human_approval } = report
+  const { use_case, risk_assessment, policy_compliance, decision, status, human_approval } =
+    report
+
+  const riskScore = Number(risk_assessment?.risk_score || 0)
+  const riskLevel = risk_assessment?.risk_level || 'unknown'
+  const isPending = status === 'pending_human_approval'
 
   return (
-    <>
-      <Link to="/">&larr; Back to reports</Link>
+    <div className="page-rise report-detail">
+      <Link className="back-link" to="/reports">
+        <ArrowLeft size={13} />
+        Back to reports
+      </Link>
 
-      <div className="page-head" style={{ marginTop: 16 }}>
+      <div className="report-title-row">
         <h1>{use_case.name}</h1>
-        <span className={`badge badge-${status}`}>{status.replaceAll('_', ' ')}</span>
+        <span className={`pill pill-${statusTone(status)}`}>{pretty(status)}</span>
+        <div className="toolbar-spacer" />
+        <span className="mono tone-faintest">{use_case.id.slice(0, 8)}</span>
       </div>
 
       {error && <div className="error-banner">{error}</div>}
 
-      <div className="card">
-        <h2>Use case</h2>
-        <dl className="kv-list">
-          <dt>Owner</dt>
-          <dd>{use_case.owner}</dd>
-          <dt>Description</dt>
-          <dd>{use_case.description}</dd>
-          <dt>Data classification</dt>
-          <dd>{use_case.data_classification || '—'}</dd>
-          <dt>Deployment context</dt>
-          <dd>{use_case.deployment_context || '—'}</dd>
-          <dt>Autonomy level</dt>
-          <dd>{use_case.autonomy_level || '—'}</dd>
-          <dt>Deployment status</dt>
-          <dd>{use_case.deployment_status}</dd>
-          <dt>Control-routing flags</dt>
-          <dd>
-            <ActiveFlags useCase={use_case} />
-          </dd>
-        </dl>
-      </div>
-
-      <div className="card">
-        <div className="card-head">
-          <h2>Risk assessment</h2>
-          <span className={`badge badge-${risk_assessment.risk_level}`}>
-            {risk_assessment.risk_level} · {risk_assessment.risk_score}/100
-          </span>
-        </div>
-        <h3>Risk factors</h3>
-        <List items={risk_assessment.risk_factors} />
-        <p className="rationale">{risk_assessment.rationale}</p>
-        <h3 style={{ marginTop: 12 }}>Detected risk register</h3>
-        <RiskRegister detectedRisks={risk_assessment.detected_risks} />
-      </div>
-
-      <div className="card">
-        <div className="card-head">
-          <h2>Policy compliance</h2>
-          <span className={`badge badge-${policy_compliance.status}`}>
-            {policy_compliance.status.replaceAll('_', ' ')}
-          </span>
-        </div>
-        <p className="rationale">{policy_compliance.rationale}</p>
-        <h3 style={{ marginTop: 12 }}>Routed controls</h3>
-        <ControlEvaluations evaluations={policy_compliance.control_evaluations} />
-      </div>
-
-      <div className="card">
-        <div className="card-head">
-          <h2>Decision</h2>
-          <span className={`badge badge-${decision.decision}`}>
-            {decision.decision.replaceAll('_', ' ')}
-          </span>
-        </div>
-        <h3>Conditions</h3>
-        <List items={decision.conditions} />
-        <p className="rationale">{decision.rationale}</p>
-      </div>
-
-      {human_approval && (
-        <div className="card">
-          <h2>Human decision</h2>
-          <dl className="kv-list">
-            <dt>Decision</dt>
-            <dd>{human_approval.approved ? 'Approved' : 'Rejected'}</dd>
-            <dt>Approver</dt>
-            <dd>{human_approval.approver}</dd>
-            <dt>Notes</dt>
-            <dd>{human_approval.notes || '—'}</dd>
-            <dt>Decided at</dt>
-            <dd>{new Date(human_approval.decided_at).toLocaleString()}</dd>
-          </dl>
-        </div>
-      )}
-
-      {status === 'pending_human_approval' && (
-        <div className="card">
-          <h2>Record human decision</h2>
-          <div className="form-grid">
-            <div className="field">
-              <label htmlFor="approver">Approver</label>
-              <input
-                id="approver"
-                value={approver}
-                onChange={(event) => setApprover(event.target.value)}
-                placeholder="you@example.com"
-              />
-            </div>
-            <div className="field span-2">
-              <label htmlFor="notes">Notes (optional)</label>
-              <textarea
-                id="notes"
-                value={notes}
-                onChange={(event) => setNotes(event.target.value)}
-              />
-            </div>
+      <div className="detail-grid">
+        <div className="detail-main">
+          <div className="ov-panel">
+            <h2 style={{ marginBottom: 12 }}>Use case</h2>
+            <dl className="kv-grid">
+              <dt>Owner</dt>
+              <dd>{use_case.owner}</dd>
+              <dt>Description</dt>
+              <dd className="kv-desc">{use_case.description}</dd>
+              <dt>Data classification</dt>
+              <dd>
+                <span className="tag tag-rose">{pretty(use_case.data_classification)}</span>
+              </dd>
+              <dt>Deployment</dt>
+              <dd>{pretty(use_case.deployment_context)}</dd>
+              <dt>Autonomy</dt>
+              <dd>{pretty(use_case.autonomy_level)}</dd>
+            </dl>
           </div>
-          <div className="form-actions">
-            <button
-              className="btn btn-primary"
-              disabled={deciding}
-              onClick={() => handleDecision(true)}
-            >
-              Approve
-            </button>
-            <button
-              className="btn btn-danger"
-              disabled={deciding}
-              onClick={() => handleDecision(false)}
-            >
-              Reject
-            </button>
+
+          <div className="ov-panel">
+            <div className="ov-panel-head">
+              <h2>Risk assessment</h2>
+              <span className="agent-tag">
+                <ShieldAlert size={13} className="tone-rose" />
+                Risk Assessment Agent
+              </span>
+            </div>
+            <div className="risk-donut-row">
+              <div
+                className="risk-donut"
+                style={{
+                  background: `conic-gradient(var(--rose) 0 ${riskScore}%, var(--line-faint) ${riskScore}% 100%)`,
+                }}
+              >
+                <div className="risk-donut-center">
+                  <span className="risk-donut-score">{riskScore}</span>
+                  <span className="risk-donut-level">{riskLevel}</span>
+                </div>
+              </div>
+              <div className="risk-factors-col">
+                <div className="detail-label">Risk factors</div>
+                <Tags items={risk_assessment?.risk_factors} tone="rose" />
+              </div>
+            </div>
+            <p className="agent-rationale-text">{risk_assessment?.rationale}</p>
+          </div>
+
+          <div className="ov-panel">
+            <div className="ov-panel-head">
+              <h2>Policy compliance</h2>
+              <span className={`pill pill-${policy_compliance?.status === 'compliant' ? 'teal' : 'rose'}`}>
+                {pretty(policy_compliance?.status)}
+              </span>
+            </div>
+            <div className="compliance-two-col">
+              <div>
+                <div className="detail-label tone-rose-text">
+                  Violated · {policy_compliance?.violated_policies?.length || 0}
+                </div>
+                <div className="policy-mini-list">
+                  {(policy_compliance?.violated_policies || []).map((pid) => (
+                    <div className="policy-mini-row policy-mini-rose" key={pid}>
+                      <span className="mono">{pid}</span>
+                    </div>
+                  ))}
+                  {(policy_compliance?.violated_policies || []).length === 0 && (
+                    <p className="ov-empty-note">None</p>
+                  )}
+                </div>
+              </div>
+              <div>
+                <div className="detail-label tone-teal-text">
+                  Satisfied · {policy_compliance?.satisfied_policies?.length || 0}
+                </div>
+                <div className="policy-mini-list">
+                  {(policy_compliance?.satisfied_policies || []).map((pid) => (
+                    <div className="policy-mini-row policy-mini-teal" key={pid}>
+                      <span className="mono">{pid}</span>
+                    </div>
+                  ))}
+                  {(policy_compliance?.satisfied_policies || []).length === 0 && (
+                    <p className="ov-empty-note">None</p>
+                  )}
+                </div>
+              </div>
+            </div>
+            <p className="agent-rationale-text">{policy_compliance?.rationale}</p>
+          </div>
+
+          <div className="ov-panel decision-panel">
+            <div className="ov-panel-head">
+              <h2>Decision</h2>
+              <span className={`pill pill-${decisionTone(decision?.decision)}`}>
+                {pretty(decision?.decision)}
+              </span>
+            </div>
+            <div className="detail-label">Conditions</div>
+            <div className="conditions-list">
+              {(decision?.conditions || []).length === 0 ? (
+                <p className="ov-empty-note">None</p>
+              ) : (
+                decision.conditions.map((c) => (
+                  <div className="condition-row" key={c}>
+                    <CheckSquare size={13} className="tone-violet" />
+                    {c}
+                  </div>
+                ))
+              )}
+            </div>
+            <p className="agent-rationale-text">{decision?.rationale}</p>
           </div>
         </div>
-      )}
-    </>
+
+        <div className="detail-rail">
+          {isPending && (
+            <div className="ov-panel decide-panel">
+              <h2 style={{ marginBottom: 3 }}>Record human decision</h2>
+              <p className="ov-empty-note" style={{ marginBottom: 13 }}>
+                Logged to the audit trail with your name.
+              </p>
+              <div className="field">
+                <label htmlFor="approver">Approver</label>
+                <input
+                  id="approver"
+                  value={approver}
+                  onChange={(e) => setApprover(e.target.value)}
+                  placeholder="you@example.com"
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="notes">Notes</label>
+                <textarea
+                  id="notes"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="e.g. added human review step"
+                />
+              </div>
+              <div className="decide-actions">
+                <button
+                  className="btn-approve"
+                  type="button"
+                  disabled={deciding}
+                  onClick={() => handleDecision(true)}
+                >
+                  Approve
+                </button>
+                <button
+                  className="btn-reject"
+                  type="button"
+                  disabled={deciding}
+                  onClick={() => handleDecision(false)}
+                >
+                  Reject
+                </button>
+              </div>
+            </div>
+          )}
+
+          {human_approval && (
+            <div className={`ov-panel decided-panel ${human_approval.approved ? 'approved' : 'rejected'}`}>
+              <div className="decided-head">
+                {human_approval.approved ? (
+                  <CheckCircle2 size={16} className="tone-teal" />
+                ) : (
+                  <XCircle size={16} className="tone-rose" />
+                )}
+                <h2>{human_approval.approved ? 'Approved by human' : 'Rejected by human'}</h2>
+              </div>
+              <dl className="kv-grid kv-grid-tight">
+                <dt>Approver</dt>
+                <dd>{human_approval.approver}</dd>
+                <dt>Decided</dt>
+                <dd>{timeAgo(human_approval.decided_at)}</dd>
+                <dt>Logged</dt>
+                <dd className="mono">audit_log.jsonl</dd>
+              </dl>
+            </div>
+          )}
+
+          <div className="ov-panel">
+            <div className="ov-panel-head">
+              <h2>Audit trail</h2>
+            </div>
+            <div className="mini-audit">
+              {audit.length === 0 ? (
+                <p className="ov-empty-note">No entries yet.</p>
+              ) : (
+                audit.map((entry, i) => (
+                  <div className="mini-audit-row" key={entry.id}>
+                    <div className="mini-audit-dot-col">
+                      <span className="audit-dot" />
+                      {i < audit.length - 1 && <span className="audit-dot-line" />}
+                    </div>
+                    <div>
+                      <div className="mini-audit-stage">{pretty(entry.stage)}</div>
+                      <div className="mini-audit-meta">
+                        {entry.actor} · {timeAgo(entry.timestamp)}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   )
 }

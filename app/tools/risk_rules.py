@@ -1,10 +1,11 @@
-"""Tool: read-only access to the SDAIA-derived risk library.
+"""Tool: read/write access to the risk-scoring rule set.
 
 Backed by data/risk_rules.yaml. Exposed to the Risk Assessment Agent as an
-OpenAI-style callable tool for background/citation. Which risks actually
-apply to a given use case, and their score, is decided deterministically
-by app/tools/risk_engine.py - not by the LLM.
+OpenAI-style callable tool. The agent is expected to use these rules as
+guidance for scoring; the platform does not force a purely mechanical score
+so that the LLM can reason about context the keyword rules miss.
 """
+
 from functools import lru_cache
 from typing import Any, Dict, List, Optional
 
@@ -19,23 +20,76 @@ def _load_risk_rules() -> Dict[str, Any]:
         return yaml.safe_load(f) or {}
 
 
-def get_risk_rules(domain: Optional[str] = None) -> List[Dict[str, Any]]:
-    """Return risk library entries, optionally filtered by domain.
+def add_risk_rule(rule: Dict[str, Any]) -> Dict[str, Any]:
+    """Persist a new risk rule to data/risk_rules.yaml."""
+
+    with open(config.RISK_RULES_FILE, "r", encoding="utf-8") as f:
+        data = yaml.safe_load(f) or {}
+
+    rules = data.get("risk_rules", [])
+
+    rule_id = rule.get("id")
+
+    if rule_id and any(
+        existing.get("id") == rule_id
+        for existing in rules
+    ):
+        raise ValueError(
+            f"Risk rule with id '{rule_id}' already exists"
+        )
+
+    rules.append(rule)
+    data["risk_rules"] = rules
+
+    with open(config.RISK_RULES_FILE, "w", encoding="utf-8") as f:
+        yaml.safe_dump(
+            data,
+            f,
+            sort_keys=False,
+            allow_unicode=True,
+        )
+
+    # Important: refresh cached rules immediately
+    _load_risk_rules.cache_clear()
+
+    return rule
+
+
+def get_risk_rules(
+    category: Optional[str] = None,
+) -> List[Dict[str, Any]]:
+    """Return risk-scoring rules, optionally filtered by category.
 
     Args:
-        domain: optional domain filter, e.g. Data, Algorithm, Human,
-            Security, "Third Party", Compliance, Legal, Operational,
-            Reputational, "Social/Environmental", Accountability, GenAI.
+        category: optional category filter
+            (e.g. data_sensitivity, autonomy,
+            consequential_decisions, external_exposure,
+            third_party_dependency, system_access, scale).
     """
-    rules = _load_risk_rules().get("risk_library", [])
-    if domain:
-        rules = [r for r in rules if r.get("domain", "").lower() == domain.lower()]
+
+    rules = _load_risk_rules().get(
+        "risk_rules",
+        [],
+    )
+
+    if category:
+        rules = [
+            r
+            for r in rules
+            if r.get("category") == category
+        ]
+
     return rules
 
 
 def get_scoring_bands() -> List[Dict[str, Any]]:
-    """Return the score->risk-level bands used to translate a numeric score."""
-    return _load_risk_rules().get("scoring", {}).get("bands", [])
+    """Return score->risk-level bands used to translate a numeric score."""
+
+    return (
+        _load_risk_rules()
+        .get("scoring", {})
+        .get("bands", [])
+    )
 
 
 GET_RISK_RULES_SCHEMA = {
@@ -43,19 +97,22 @@ GET_RISK_RULES_SCHEMA = {
     "function": {
         "name": "get_risk_rules",
         "description": (
-            "Retrieve entries from the SDAIA-derived risk library for background/citation, "
-            "optionally filtered by domain. The overall risk level and score for this "
-            "submission are already computed deterministically - this tool does not change them."
+            "Retrieve the organization's risk-scoring rules "
+            "used to evaluate AI use cases, optionally "
+            "filtered by category."
         ),
         "parameters": {
             "type": "object",
             "properties": {
-                "domain": {
+                "category": {
                     "type": "string",
                     "description": (
-                        "Optional domain filter: Data, Algorithm, Human, Security, "
-                        "Third Party, Compliance, Legal, Operational, Reputational, "
-                        "Social/Environmental, Accountability, or GenAI."
+                        "Optional category filter: "
+                        "data_sensitivity, autonomy, "
+                        "consequential_decisions, "
+                        "external_exposure, "
+                        "third_party_dependency, "
+                        "system_access, or scale."
                     ),
                 },
             },
@@ -64,11 +121,19 @@ GET_RISK_RULES_SCHEMA = {
     },
 }
 
+
 GET_SCORING_BANDS_SCHEMA = {
     "type": "function",
     "function": {
         "name": "get_scoring_bands",
-        "description": "Retrieve the numeric score ranges that map to low/medium/high/critical risk levels.",
-        "parameters": {"type": "object", "properties": {}, "required": []},
+        "description": (
+            "Retrieve the numeric score ranges that map "
+            "to low/medium/high/critical risk levels."
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {},
+            "required": [],
+        },
     },
 }

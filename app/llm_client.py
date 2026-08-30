@@ -1,8 +1,4 @@
-"""Thin wrapper around the OpenAI chat completions API.
-
-We use the official `openai` SDK directly, which gives us chat completions
-+ tool/function calling for free.
-"""
+"""Thin wrapper around the OpenAI chat completions API."""
 from functools import lru_cache
 
 from openai import OpenAI

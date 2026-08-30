@@ -3,7 +3,6 @@ __pycache__/
 .venv/
 .venv-wsl/
 venv/
-.venv.zip
 .env
 .pytest_cache/
 

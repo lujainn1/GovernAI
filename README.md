@@ -8,28 +8,19 @@ compliance, and security teams (and the developers building AI systems) a
 repeatable pipeline for reviewing an AI use case before and after it ships.
 
 Three agents, each backed by an LLM via the [OpenAI API](https://platform.openai.com),
-collaborate on every submission — but the numbers that matter are computed
-deterministically in code, not left to the LLM to invent:
+collaborate on every submission:
 
-- **Risk Assessment Agent** — a deterministic engine
-  (`app/tools/risk_engine.py`) detects which named risks from the
-  SDAIA-derived risk library apply and scores each by likelihood × impact;
-  the LLM only writes the narrative rationale and risk factors from that
-  already-computed register.
-- **Policy Compliance Agent** — a deterministic router
-  (`app/tools/control_router.py`) selects which controls from the 131-item
-  SDAIA-derived control library apply to this use case; the LLM evaluates
-  each selected control as pass/fail/review given the submitted facts.
-- **Decision Agent** — a fixed rule (`deterministic_decision` in
-  `app/agents/decision_agent.py`) computes `approve` /
-  `require_human_approval` / `block` from the risk level and control
-  results; the LLM only writes the remediation conditions and rationale.
+- **Risk Assessment Agent** — evaluates the use case and assigns a risk
+  level (`low` / `medium` / `high` / `critical`) with a numeric score and
+  named risk factors.
+- **Policy Compliance Agent** — checks the use case against the
+  organizational policy repository and reports satisfied/violated policies.
+- **Decision Agent** — combines both findings and recommends `approve`,
+  `require_human_approval`, or `block`.
 
-See [Governance model](#governance-model) below for how risk detection,
-control routing, and the decision rule actually work. The platform is
-built so additional specialized agents (e.g. a Bias/Fairness Agent, a
-Vendor Risk Agent) can be added later without changing the orchestration
-model.
+The platform is built so additional specialized agents (e.g. a Bias/Fairness
+Agent, a Vendor Risk Agent) can be added later without changing the
+orchestration model.
 
 ## Workflow
 
@@ -44,49 +35,10 @@ Every stage writes an entry to an append-only audit log
 status until a human calls the approve/reject action, which is itself
 logged.
 
-## Governance model
-
-`data/risk_rules.yaml` (35 named risks) and `data/policies.yaml` (131
-controls) are transcribed from an SDAIA-derived governance library —
-SDAIA AI Ethics Principles v1.0 (75 lifecycle controls across Plan &
-Design / Prepare Input Data / Build & Validate / Deploy & Monitor), the
-PDPL + Implementing Regulations (32 controls), the Personal Data Transfer
-Regulation (12 controls), and the Generative AI Guidelines (12 controls).
-Control text, questions, and treatments are implementation paraphrases,
-not official legal wording — verify against the current official SDAIA
-documents before production use.
-
-A submitted `AIUseCase` carries routing flags (`personal_data`,
-`sensitive_data`, `generative_ai`, `external_provider`, `data_outside_ksa`,
-`high_impact_decision`, `user_facing_chat`, `research_purpose`,
-`deployment_status`) that deterministically decide what applies:
-
-- **Risk detection** (`app/tools/risk_engine.py`) — each risk in the
-  library triggers on a routing flag and/or free-text keywords found in
-  the description/documentation. Likelihood (1-5) comes from *how* it
-  triggered (a matched flag is more certain than a keyword match, both is
-  most certain); impact (1-5) is fixed per risk. `inherent_score =
-  likelihood × impact`, and the overall score is the worst detected
-  risk's score (scaled to 0-100) plus a small capped bump per additional
-  triggered risk.
-- **Control routing** (`app/tools/control_router.py`) — the AI-Ethics
-  Plan & Design / Prepare Input Data / Build & Validate controls always
-  apply; Deploy & Monitor controls only apply once `deployment_status` is
-  `production`; PDPL/XFER/GEN controls apply only when every condition in
-  their `applies_when` list is true (e.g. cross-border transfer controls
-  need both `personal_data` and `data_outside_ksa`).
-- **The decision rule** (`deterministic_decision` in
-  `app/agents/decision_agent.py`) — critical risk always blocks; high risk
-  combined with a failed critical control blocks; any failed critical
-  control, any failed/review-state control, or high risk alone requires
-  human approval; a clean record at low/medium risk auto-approves.
-
 ## How the agents use tools
 
 Agents don't just free-associate — they call real tools (via OpenAI-style
-function calling through OpenAI) backed by this repo's data. Which
-risks/controls apply is decided in code (above); these tools are for the
-agents' own citations and narrative-writing, not for deciding applicability:
+function calling through the OpenAI API) backed by this repo's data:
 
 | Tool | Backing data | Used by |
 |---|---|---|
@@ -105,19 +57,17 @@ app/
     policy_agent.py      # Policy Compliance Agent
     decision_agent.py    # Decision Agent
   tools/
-    policy_repository.py # get_policies / search_policies (control library lookup)
-    control_router.py     # deterministic control routing (route_controls)
-    risk_rules.py         # get_risk_rules / get_scoring_bands (risk library lookup)
-    risk_engine.py         # deterministic risk detection/scoring (detect_risks, compute_overall_risk)
-    document_analysis.py    # analyze_document
-    audit_log.py              # log_event / get_audit_log
+    policy_repository.py # get_policies / search_policies
+    risk_rules.py         # get_risk_rules / get_scoring_bands
+    document_analysis.py  # analyze_document
+    audit_log.py           # log_event / get_audit_log
   orchestrator.py       # runs the full workflow, human-approval step
-  models.py              # pydantic models (AIUseCase, GovernanceReport, DetectedRisk, ControlEvaluation, ...)
+  models.py              # pydantic models (AIUseCase, GovernanceReport, ...)
   api.py                  # FastAPI app
   cli.py                   # command-line interface
 data/
-  policies.yaml          # SDAIA-derived control library (131 controls)
-  risk_rules.yaml         # SDAIA-derived risk library (35 risks) + scoring bands
+  policies.yaml          # organizational AI governance policies
+  risk_rules.yaml         # risk-scoring rules
   reports/                # one JSON governance report per use case (generated)
   audit_log.jsonl          # append-only audit trail (generated)
 examples/
@@ -151,7 +101,7 @@ npm install
 
 ```bash
 # Submit the bundled example (a fully-autonomous loan-denial agent — expect
-# a critical-risk, non-compliant, blocked outcome)
+# a high-risk, non-compliant, block/require-human-approval outcome)
 python -m app.cli submit examples/sample_use_case.json
 
 # List all reports

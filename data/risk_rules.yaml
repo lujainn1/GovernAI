@@ -1,434 +1,608 @@
-# SDAIA-derived AI risk library used by the deterministic risk-detection
-# engine (app/tools/risk_engine.py). Each entry is one named risk from the
-# governance library's Part A2 (35 risks across 10 domains, adapted from
-# SDAIA AI Ethics Principles + the National AI Risk Management Framework).
-#
-# Detection is deterministic, not LLM-judged:
-#   - trigger_fields: AIUseCase boolean fields that directly activate the
-#     risk when true (e.g. personal_data -> R-01).
-#   - trigger_keywords: substrings checked against the use case's
-#     description/documentation/autonomy_level/deployment_context text
-#     (case-insensitive) when no structured field applies.
-#   - impact (1-5): fixed severity ceiling for this risk, authored here.
-#   - likelihood (1-5): NOT stored here - computed at detection time by
-#     app/tools/risk_engine.py from how the risk was triggered (a matched
-#     structured field is treated as more certain than a keyword match):
-#       matched only by keyword  -> likelihood 3
-#       matched by a boolean field -> likelihood 4
-#       matched by both           -> likelihood 5
-#   - inherent_score = likelihood x impact (max 25), scaled to 0-100 to
-#     land in the same low/medium/high/critical bands as before.
-#
-# Source basis: SDAIA AI Ethics Principles v1.0 (risk levels + domains) and
-# the National AI Risk Management Framework (2026) methodology (identify,
-# assess, treat, monitor). Recommended_treatment text and control links are
-# implementation paraphrases, not official legal wording.
-
-risk_library:
-  # --- Data ----------------------------------------------------------------
-  - id: R-01
-    domain: Data
-    title: Personal-data exposure
-    trigger: Use case processes identifiable individuals
-    trigger_fields: [personal_data]
-    trigger_keywords: [personal data, identifiable individual, pii]
-    impact: 4
-    recommended_treatment: Minimize data, establish legal basis, apply access/security controls, PDPL review
-    controls: [PDPL-01, PDPL-04, PDPL-09, PID.3]
-    source_refs: [SDAIA_PDPL, SDAIA_AI_ETHICS]
-
-  - id: R-02
-    domain: Data
-    title: Sensitive-data misuse
-    trigger: Health/biometric/genetic/other sensitive categories are processed
-    trigger_fields: [sensitive_data]
-    trigger_keywords: [health data, medical, biometric, genetic, sensitive category]
-    impact: 5
-    recommended_treatment: Enhanced lawful basis, DPIA, minimization, security, human review
-    controls: [PDPL-02, PDPL-23, PID.3]
-    source_refs: [SDAIA_PDPL]
-
-  - id: R-03
-    domain: Data
-    title: Excessive data collection
-    trigger: More data is collected than necessary for the stated purpose
-    trigger_fields: []
-    trigger_keywords: [more data than necessary, excessive collection, collect everything, just in case data]
-    impact: 3
-    recommended_treatment: Field-to-purpose mapping, minimization, deletion
-    controls: [PDPL-09, PDPL-10]
-    source_refs: [SDAIA_MIN_DATA]
-
-  - id: R-04
-    domain: Data
-    title: Poor data quality or stale data
-    trigger: Inaccurate, incomplete, outdated, or low-credibility inputs
-    trigger_fields: []
-    trigger_keywords: [outdated data, stale data, low-quality data, incomplete data, inaccurate data]
-    impact: 2
-    recommended_treatment: Quality metrics, provenance, refresh controls
-    controls: [PID.6, PID.14]
-    source_refs: [SDAIA_AI_ETHICS]
-
-  - id: R-05
-    domain: Data
-    title: Unrepresentative data
-    trigger: Dataset excludes or underrepresents affected groups
-    trigger_fields: []
-    trigger_keywords: [underrepresent, unrepresentative data, lacks diversity, sampling bias]
-    impact: 4
-    recommended_treatment: Diversity review, subgroup metrics, representative sampling
-    controls: [PID.8, PD.11]
-    source_refs: [SDAIA_AI_ETHICS]
-
-  - id: R-06
-    domain: Data
-    title: Sensitive proxy leakage
-    trigger: Non-sensitive features indirectly reveal protected attributes
-    trigger_fields: []
-    trigger_keywords: [proxy variable, indirectly reveal, correlated with race, correlated with gender]
-    impact: 4
-    recommended_treatment: Proxy analysis and feature review
-    controls: [PID.10, BV.12]
-    source_refs: [SDAIA_AI_ETHICS]
-
-  - id: R-07
-    domain: Data
-    title: Weak provenance / untrusted source
-    trigger: Data source is unknown or unreliable
-    trigger_fields: []
-    trigger_keywords: [unknown data source, untrusted data, unverified source, scraped data]
-    impact: 2
-    recommended_treatment: Source verification, lineage, quality checks
-    controls: [PID.6]
-    source_refs: [SDAIA_AI_ETHICS]
-
-  - id: R-08
-    domain: Data
-    title: Improper classification/access
-    trigger: Data is misclassified or broadly accessible
-    trigger_fields: []
-    trigger_keywords: [misclassified data, broadly accessible, no access control on data]
-    impact: 3
-    recommended_treatment: Classification, least privilege, access logging
-    controls: [PID.2, PID.13, PDPL-15]
-    source_refs: [SDAIA_AI_ETHICS]
-
-  # --- Algorithm -------------------------------------------------------------
-  - id: R-09
-    domain: Algorithm
-    title: Bias / discrimination
-    trigger: Outputs disadvantage protected or vulnerable groups
-    trigger_fields: [high_impact_decision]
-    trigger_keywords: [bias, discriminat, unfair to, disadvantage a group]
-    impact: 5
-    recommended_treatment: Fairness KPIs, bias testing, mitigation, monitoring
-    controls: [PD.10, PD.11, PD.12, BV.9, DM.9]
-    source_refs: [SDAIA_AI_ETHICS]
-
-  - id: R-10
-    domain: Algorithm
-    title: Inaccurate predictions
-    trigger: Model produces materially wrong outputs
-    trigger_fields: []
-    trigger_keywords: [inaccurate prediction, wrong output, high error rate]
-    impact: 3
-    recommended_treatment: Validation, error thresholds, monitoring, fallback
-    controls: [PD.21, DM.3]
-    source_refs: [SDAIA_AI_ETHICS]
-
-  - id: R-11
-    domain: Algorithm
-    title: Low explainability
-    trigger: Material decision cannot be reasonably explained
-    trigger_fields: []
-    trigger_keywords: [cannot be explained, black box, not explainable, opaque model, partially explainable]
-    impact: 3
-    recommended_treatment: Interpretability methods, reason codes, evidence
-    controls: [PD.24, BV.5, BV.6, BV.7]
-    source_refs: [SDAIA_AI_ETHICS]
-
-  - id: R-12
-    domain: Algorithm
-    title: Unexpected/adversarial behavior
-    trigger: Model behaves poorly under edge/adversarial conditions
-    trigger_fields: []
-    trigger_keywords: [adversarial input, edge case failure, jailbreak, prompt injection]
-    impact: 3
-    recommended_treatment: Stress/adversarial testing, fallback
-    controls: [BV.1, BV.2, BV.3]
-    source_refs: [SDAIA_AI_ETHICS]
-
-  - id: R-13
-    domain: Algorithm
-    title: Model drift / fairness drift
-    trigger: Performance or subgroup outcomes degrade after deployment
-    trigger_fields: []
-    trigger_keywords: [model drift, performance degrades over time, fairness drift]
-    impact: 3
-    recommended_treatment: Continuous monitoring, thresholds, retraining/review
-    controls: [DM.4, DM.9]
-    source_refs: [SDAIA_AI_ETHICS]
-
-  # --- Human -------------------------------------------------------------------
-  - id: R-14
-    domain: Human
-    title: Automation bias / overreliance
-    trigger: Users treat AI output as automatically correct
-    trigger_fields: []
-    trigger_keywords: [automatically approve, overreliance on ai, no human review, rubber stamp]
-    impact: 4
-    recommended_treatment: Meaningful human oversight, training, UI warnings
-    controls: [PD.2, DM.6]
-    source_refs: [SDAIA_AI_ETHICS]
-
-  - id: R-15
-    domain: Human
-    title: Insufficient human oversight
-    trigger: No authorized person can challenge/override AI
-    trigger_fields: []
-    trigger_keywords: [no human review, fully autonomous, cannot override, no oversight]
-    impact: 5
-    recommended_treatment: Human approval/override, autonomy limits
-    controls: [PD.1, PD.3, PD.4]
-    source_refs: [SDAIA_AI_ETHICS]
-
-  - id: R-16
-    domain: Human
-    title: Deception/manipulation
-    trigger: Users are misled about AI or their freedom of choice is impaired
-    trigger_fields: [user_facing_chat]
-    trigger_keywords: [deceive users, manipulate users, dark pattern, not disclosed as ai]
-    impact: 4
-    recommended_treatment: Disclosure, anti-manipulation design, redress
-    controls: [PD.15, DM.1]
-    source_refs: [SDAIA_AI_ETHICS]
-
-  - id: R-17
-    domain: Human
-    title: Rights/cultural misalignment
-    trigger: AI conflicts with fundamental rights or Saudi cultural values
-    trigger_fields: []
-    trigger_keywords: [cultural value, fundamental rights, discriminatory against]
-    impact: 4
-    recommended_treatment: Impact assessment, stakeholder review, periodic reassessment
-    controls: [PD.14, PID.12, BV.13, DM.20]
-    source_refs: [SDAIA_AI_ETHICS]
-
-  - id: R-18
-    domain: Human
-    title: Accessibility/exclusion
-    trigger: System information is inaccessible to some users
-    trigger_fields: []
-    trigger_keywords: [not accessible, excludes users, no accessibility support]
-    impact: 2
-    recommended_treatment: Accessible design and communication
-    controls: [DM.12]
-    source_refs: [SDAIA_AI_ETHICS]
-
-  # --- Security ------------------------------------------------------------
-  - id: R-19
-    domain: Security
-    title: Unauthorized access / confidentiality failure
-    trigger: Weak IAM, exposed secrets/data, excessive privileges
-    trigger_fields: []
-    trigger_keywords: [weak access control, exposed secrets, excessive privileges, no iam]
-    impact: 5
-    recommended_treatment: RBAC, least privilege, secrets/security controls
-    controls: [PD.18, PID.5, PDPL-14, PDPL-15]
-    source_refs: [SDAIA_AI_ETHICS, SDAIA_PDPL]
-
-  - id: R-20
-    domain: Security
-    title: Adversarial/cyber vulnerability
-    trigger: Attacks can alter behavior, expose data, or break confidentiality
-    trigger_fields: []
-    trigger_keywords: [cyberattack, security vulnerability, exploit, breach risk]
-    impact: 4
-    recommended_treatment: Threat modeling, vulnerability testing, monitoring
-    controls: [PID.5, DM.2]
-    source_refs: [SDAIA_AI_ETHICS]
-
-  # --- Third Party -----------------------------------------------------------
-  - id: R-21
-    domain: Third Party
-    title: Vendor/processor risk
-    trigger: External model/cloud/vendor handles data or critical decisions
-    trigger_fields: [external_provider]
-    trigger_keywords: [external vendor, third-party model, external api, cloud provider]
-    impact: 3
-    recommended_treatment: Due diligence, contracts, processor controls, monitoring
-    controls: [PDPL-22]
-    source_refs: [SDAIA_PDPL]
-
-  - id: R-22
-    domain: Third Party
-    title: Cross-border transfer risk
-    trigger: Personal data is transferred/accessed outside KSA
-    trigger_fields: [data_outside_ksa]
-    trigger_keywords: [outside the kingdom, cross-border transfer, foreign cloud, data leaves ksa]
-    impact: 4
-    recommended_treatment: Transfer assessment, adequacy/safeguards, minimization
-    controls: [XFER-01, XFER-04, XFER-05]
-    source_refs: [SDAIA_TRANSFER_REG]
-
-  # --- Compliance -----------------------------------------------------------
-  - id: R-23
-    domain: Compliance
-    title: Standards/policy non-alignment
-    trigger: Use case is not mapped to applicable SDAIA/sector standards
-    trigger_fields: []
-    trigger_keywords: [not mapped to standards, no compliance mapping, unclear which regulation]
-    impact: 3
-    recommended_treatment: Policy/control mapping, compliance evidence
-    controls: [PD.16]
-    source_refs: [SDAIA_AI_ETHICS]
-
-  - id: R-24
-    domain: Compliance
-    title: Missing records/evidence
-    trigger: No RoPA, logs, approvals, assessments, or traceability
-    trigger_fields: []
-    trigger_keywords: [no audit log, not logged yet, no ropa, no traceability, not tracked]
-    impact: 3
-    recommended_treatment: Audit log, RoPA, evidence repository
-    controls: [PDPL-16, GEN-11]
-    source_refs: [SDAIA_PDPL, SDAIA_GENAI]
-
-  # --- Legal -----------------------------------------------------------------
-  - id: R-25
-    domain: Legal
-    title: Unclear lawful basis / disclosure basis
-    trigger: Personal data processing/sharing lacks a valid basis
-    trigger_fields: [personal_data]
-    trigger_keywords: [no legal basis, unclear consent, lawful basis unclear]
-    impact: 4
-    recommended_treatment: Legal-basis review, disclosure controls
-    controls: [PDPL-04, PDPL-20]
-    source_refs: [SDAIA_PDPL]
-
-  # --- Operational -----------------------------------------------------------
-  - id: R-26
-    domain: Operational
-    title: No fallback or recovery
-    trigger: System failure has no tested response or alternative path
-    trigger_fields: []
-    trigger_keywords: [no fallback, no recovery plan, no incident response]
-    impact: 3
-    recommended_treatment: Fallback plan, incident response, tested recovery
-    controls: [BV.2, BV.3]
-    source_refs: [SDAIA_AI_ETHICS]
-
-  - id: R-27
-    domain: Operational
-    title: Purpose/mission drift
-    trigger: AI is used beyond approved scope or goals
-    trigger_fields: []
-    trigger_keywords: [used beyond scope, mission creep, repurposed without review]
-    impact: 3
-    recommended_treatment: Purpose limits, change control, monitoring
-    controls: [DM.4]
-    source_refs: [SDAIA_AI_ETHICS]
-
-  # --- Reputational ------------------------------------------------------------
-  - id: R-28
-    domain: Reputational
-    title: Loss of trust
-    trigger: Opaque, unfair, unsafe, or privacy-invasive AI harms trust
-    trigger_fields: []
-    trigger_keywords: [loss of trust, reputational risk, public backlash]
-    impact: 3
-    recommended_treatment: Transparency, fairness, incident handling, redress
-    controls: [DM.7, DM.17]
-    source_refs: [SDAIA_AI_ETHICS]
-
-  # --- Social/Environmental --------------------------------------------------
-  - id: R-29
-    domain: Social/Environmental
-    title: Negative societal or environmental impact
-    trigger: Deployment produces broader social/environmental harm
-    trigger_fields: []
-    trigger_keywords: [societal harm, environmental impact, negative social impact]
-    impact: 3
-    recommended_treatment: Impact assessment and monitoring
-    controls: [PD.22, DM.13]
-    source_refs: [SDAIA_AI_ETHICS]
-
-  # --- Accountability --------------------------------------------------------
-  - id: R-30
-    domain: Accountability
-    title: Unclear ownership/liability
-    trigger: No named owner for system, model, data, or decision
-    trigger_fields: []
-    trigger_keywords: [no named owner, unclear ownership, no accountable owner]
-    impact: 3
-    recommended_treatment: RACI, sign-offs, accountable owner
-    controls: [PD.1, DM.14]
-    source_refs: [SDAIA_AI_ETHICS]
-
-  - id: R-31
-    domain: Accountability
-    title: No redress/complaint path
-    trigger: Affected people cannot challenge harm or outcome
-    trigger_fields: []
-    trigger_keywords: [no complaint process, no redress, no appeal process]
-    impact: 3
-    recommended_treatment: Redress and escalation mechanism
-    controls: [DM.17, DM.18]
-    source_refs: [SDAIA_AI_ETHICS]
-
-  # --- GenAI -------------------------------------------------------------------
-  - id: R-32
-    domain: GenAI
-    title: Hallucination/misinformation
-    trigger: Generated output contains fabricated or misleading content
-    trigger_fields: [generative_ai]
-    trigger_keywords: [hallucination, fabricated content, misleading generated]
-    impact: 4
-    recommended_treatment: Grounding/RAG, evaluation, human validation
-    controls: [GEN-04, GEN-05]
-    source_refs: [SDAIA_GENAI]
-
-  - id: R-33
-    domain: GenAI
-    title: Prompt/input data leakage
-    trigger: Sensitive information is placed into an external GenAI service
-    trigger_fields: [generative_ai, external_provider]
-    trigger_keywords: [sensitive data in prompt, data sent to external llm, external llm api]
-    impact: 4
-    recommended_treatment: Input filtering, minimization, approved provider/environment
-    controls: [GEN-02, GEN-03]
-    source_refs: [SDAIA_GENAI]
-
-  - id: R-34
-    domain: GenAI
-    title: IP/content-rights risk
-    trigger: Generated/ingested content creates copyright/ownership issues
-    trigger_fields: [generative_ai]
-    trigger_keywords: [copyright, licensing, generated content rights]
-    impact: 3
-    recommended_treatment: IP review, provenance, licensing controls
-    controls: [GEN-10]
-    source_refs: [SDAIA_GENAI]
-
-  - id: R-35
-    domain: GenAI
-    title: Unsafe autonomous action
-    trigger: Agent can execute tools/actions with excessive autonomy
-    trigger_fields: [generative_ai]
-    trigger_keywords: [autonomous agent, executes actions, tool use, api access, admin access]
-    impact: 5
-    recommended_treatment: Tool permissions, action boundaries, human approval, logs
-    controls: [GEN-07, GEN-09, PD.4]
-    source_refs: [SDAIA_GENAI]
-
+risk_rules:
+- id: RISK-001
+  category: data_sensitivity
+  description: Processes sensitive personal data (health, biometric, financial, government
+    ID, children's data).
+  weight: 25
+  trigger_keywords:
+  - health
+  - medical
+  - biometric
+  - financial
+  - credit score
+  - ssn
+  - social security
+  - government id
+  - children
+  - minors
+- id: RISK-002
+  category: autonomy
+  description: Operates with full autonomy and can take actions without human review.
+  weight: 25
+  trigger_keywords:
+  - fully autonomous
+  - no human review
+  - autonomous agent
+  - self-executing
+  - auto-approve
+- id: RISK-003
+  category: consequential_decisions
+  description: Materially influences decisions about employment, lending, housing,
+    healthcare access, or legal rights.
+  weight: 25
+  trigger_keywords:
+  - hiring
+  - employment decision
+  - lending
+  - loan approval
+  - credit decision
+  - housing
+  - eviction
+  - insurance claim
+  - legal
+  - immigration
+  - parole
+- id: RISK-004
+  category: external_exposure
+  description: Customer-facing or public-facing system with direct external user interaction.
+  weight: 15
+  trigger_keywords:
+  - customer-facing
+  - public-facing
+  - external users
+  - chatbot for customers
+  - public api
+- id: RISK-005
+  category: third_party_dependency
+  description: Relies on third-party or externally hosted models/data with unclear
+    data-handling terms.
+  weight: 10
+  trigger_keywords:
+  - third-party model
+  - external vendor
+  - external api
+  - unverified data source
+- id: RISK-006
+  category: system_access
+  description: Has permissions to modify, delete, or move data/funds, or to call other
+    systems and tools.
+  weight: 20
+  trigger_keywords:
+  - delete
+  - write access
+  - modify records
+  - transfer funds
+  - execute code
+  - tool use
+  - api access
+  - admin access
+- id: RISK-007
+  category: scale
+  description: Large-scale deployment affecting many users or high transaction volume.
+  weight: 10
+  trigger_keywords:
+  - large-scale
+  - millions of users
+  - high volume
+  - company-wide
+  - enterprise-wide
+- id: RISK-008
+  title: Cross-Border Personal Data Processing
+  category: data_sensitivity
+  severity: High
+  condition: The AI system processes, stores, or transfers personal data outside Saudi
+    Arabia or through an external provider whose data processing location is outside
+    Saudi Arabia
+  action: Activate cross-border data transfer and third-party processing controls,
+    require confirmation of the processing location and applicable safeguards, and
+    route the use case for compliance review before approval.
+- id: R-01
+  title: Personal-data exposure
+  domain: Data
+  category: data
+  description: Use case processes identifiable individuals
+  treatment: Minimize data, legal basis, access/security, PDPL review
+  weight: 15
+  trigger_keywords:
+  - personal data
+  - identifiable individuals
+  - pii
+  source_refs:
+  - S2
+  - S3
+- id: R-02
+  title: Sensitive-data misuse
+  domain: Data
+  category: data
+  description: Health/biometric/genetic/other sensitive categories are processed
+  treatment: Enhanced lawful-basis, DPIA, minimization, security, human review
+  weight: 20
+  trigger_keywords:
+  - health
+  - biometric
+  - genetic
+  - sensitive data
+  - dpia
+  source_refs:
+  - S2
+  - S3
+- id: R-03
+  title: Excessive data collection
+  domain: Data
+  category: data
+  description: More data is collected than necessary for stated purpose
+  treatment: Field-to-purpose mapping, minimization, deletion
+  weight: 10
+  trigger_keywords:
+  - excessive data collection
+  - more data than necessary
+  - data minimization
+  source_refs:
+  - S2
+  - S3
+- id: R-04
+  title: Poor data quality or stale data
+  domain: Data
+  category: data
+  description: Inaccurate, incomplete, outdated, or low-credibility inputs
+  treatment: Quality metrics, provenance, refresh controls
+  weight: 10
+  trigger_keywords:
+  - inaccurate data
+  - outdated data
+  - stale data
+  - data quality
+  source_refs:
+  - S2
+  - S3
+- id: R-05
+  title: Unrepresentative data
+  domain: Data
+  category: data
+  description: Dataset excludes or underrepresents affected groups
+  treatment: Diversity review, subgroup metrics, representative sampling
+  weight: 15
+  trigger_keywords:
+  - unrepresentative data
+  - underrepresented groups
+  - dataset bias
+  - sampling bias
+  source_refs:
+  - S2
+  - S3
+- id: R-06
+  title: Sensitive proxy leakage
+  domain: Data
+  category: data
+  description: Non-sensitive features indirectly reveal protected attributes
+  treatment: Proxy analysis and feature review
+  weight: 15
+  trigger_keywords:
+  - proxy variable
+  - indirect discrimination
+  - protected attribute proxy
+  source_refs:
+  - S2
+  - S3
+- id: R-07
+  title: Weak provenance / untrusted source
+  domain: Data
+  category: data
+  description: Data source is unknown or unreliable
+  treatment: Source verification, lineage, quality checks
+  weight: 10
+  trigger_keywords:
+  - unknown data source
+  - untrusted source
+  - no data provenance
+  source_refs:
+  - S2
+  - S3
+- id: R-08
+  title: Improper classification/access
+  domain: Data
+  category: data
+  description: Data is misclassified or broadly accessible
+  treatment: Classification, least privilege, access logging
+  weight: 15
+  trigger_keywords:
+  - data misclassified
+  - broad data access
+  - no access control
+  source_refs:
+  - S2
+  - S3
+- id: R-09
+  title: Bias / discrimination
+  domain: Algorithm
+  category: algorithm
+  description: Outputs disadvantage protected or vulnerable groups
+  treatment: Fairness KPIs, bias testing, mitigation, monitoring
+  weight: 25
+  trigger_keywords:
+  - bias
+  - discrimination
+  - disparate impact
+  - protected group
+  source_refs:
+  - S2
+  - S3
+- id: R-10
+  title: Inaccurate predictions
+  domain: Algorithm
+  category: algorithm
+  description: Model produces materially wrong outputs
+  treatment: Validation, error thresholds, monitoring, fallback
+  weight: 15
+  trigger_keywords:
+  - inaccurate predictions
+  - model errors
+  - wrong outputs
+  source_refs:
+  - S2
+  - S3
+- id: R-11
+  title: Low explainability
+  domain: Algorithm
+  category: algorithm
+  description: Material decision cannot be reasonably explained
+  treatment: Interpretability methods, reason codes, evidence
+  weight: 15
+  trigger_keywords:
+  - black box
+  - not explainable
+  - no reason codes
+  - low explainability
+  source_refs:
+  - S2
+  - S3
+- id: R-12
+  title: Unexpected/adversarial behavior
+  domain: Algorithm
+  category: algorithm
+  description: Model behaves poorly under edge/adversarial conditions
+  treatment: Stress/adversarial testing, fallback
+  weight: 15
+  trigger_keywords:
+  - adversarial attack
+  - edge case failure
+  - unexpected behavior
+  source_refs:
+  - S2
+  - S3
+- id: R-13
+  title: Model drift / fairness drift
+  domain: Algorithm
+  category: algorithm
+  description: Performance or subgroup outcomes degrade after deployment
+  treatment: Continuous monitoring, thresholds, retraining/review
+  weight: 15
+  trigger_keywords:
+  - model drift
+  - performance degradation
+  - fairness drift
+  source_refs:
+  - S2
+  - S3
+- id: R-14
+  title: Automation bias / overreliance
+  domain: Human
+  category: human
+  description: Users treat AI output as automatically correct
+  treatment: Meaningful human oversight, training, UI warnings
+  weight: 15
+  trigger_keywords:
+  - automation bias
+  - overreliance on ai
+  - blind trust in ai
+  source_refs:
+  - S2
+  - S3
+- id: R-15
+  title: Insufficient human oversight
+  domain: Human
+  category: human
+  description: No authorized person can challenge/override AI
+  treatment: Human approval/override, autonomy limits
+  weight: 20
+  trigger_keywords:
+  - no human oversight
+  - cannot override ai
+  - no human review
+  source_refs:
+  - S2
+  - S3
+- id: R-16
+  title: Deception/manipulation
+  domain: Human
+  category: human
+  description: Users are misled about AI or their freedom of choice is impaired
+  treatment: Disclosure, anti-manipulation design, redress
+  weight: 15
+  trigger_keywords:
+  - deceptive ai
+  - manipulative design
+  - dark patterns
+  - undisclosed ai
+  source_refs:
+  - S2
+  - S3
+- id: R-17
+  title: Rights/cultural misalignment
+  domain: Human
+  category: human
+  description: AI conflicts with fundamental rights or Saudi cultural values
+  treatment: Impact assessment, stakeholder review, periodic reassessment
+  weight: 20
+  trigger_keywords:
+  - human rights conflict
+  - cultural misalignment
+  - fundamental rights
+  source_refs:
+  - S2
+  - S3
+- id: R-18
+  title: Accessibility/exclusion
+  domain: Human
+  category: human
+  description: System information is inaccessible to some users
+  treatment: Accessible design and communication
+  weight: 10
+  trigger_keywords:
+  - not accessible
+  - excludes users
+  - accessibility
+  source_refs:
+  - S2
+  - S3
+- id: R-19
+  title: Unauthorized access / confidentiality failure
+  domain: Security
+  category: security
+  description: Weak IAM, exposed secrets/data, excessive privileges
+  treatment: RBAC, least privilege, secrets/security controls
+  weight: 20
+  trigger_keywords:
+  - unauthorized access
+  - weak iam
+  - exposed secrets
+  - excessive privileges
+  source_refs:
+  - S2
+  - S3
+- id: R-20
+  title: Adversarial/cyber vulnerability
+  domain: Security
+  category: security
+  description: Attacks can alter behavior, expose data, or break confidentiality
+  treatment: Threat modeling, vulnerability testing, monitoring
+  weight: 20
+  trigger_keywords:
+  - cyber vulnerability
+  - adversarial attack
+  - data breach risk
+  source_refs:
+  - S2
+  - S3
+- id: R-21
+  title: Vendor/processor risk
+  domain: Third Party
+  category: third_party
+  description: External model/cloud/vendor handles data or critical decisions
+  treatment: Due diligence, contracts, processor controls, monitoring
+  weight: 15
+  trigger_keywords:
+  - third-party vendor
+  - external processor
+  - vendor risk
+  source_refs:
+  - S2
+  - S3
+- id: R-22
+  title: Cross-border transfer risk
+  domain: Third Party
+  category: third_party
+  description: Personal data is transferred/accessed outside KSA
+  treatment: Transfer assessment, adequacy/safeguards, minimization
+  weight: 20
+  trigger_keywords:
+  - cross-border transfer
+  - data outside saudi arabia
+  - international data transfer
+  source_refs:
+  - S2
+  - S3
+- id: R-23
+  title: Standards/policy non-alignment
+  domain: Compliance
+  category: compliance
+  description: Use case is not mapped to applicable SDAIA/sector standards
+  treatment: Policy/control mapping, compliance evidence
+  weight: 15
+  trigger_keywords:
+  - not compliant
+  - no standards mapping
+  - policy non-alignment
+  source_refs:
+  - S2
+  - S3
+- id: R-24
+  title: Missing records/evidence
+  domain: Compliance
+  category: compliance
+  description: No RoPA, logs, approvals, assessments, or traceability
+  treatment: Audit log, RoPA, evidence repository
+  weight: 10
+  trigger_keywords:
+  - no audit log
+  - missing ropa
+  - no records
+  - no traceability
+  source_refs:
+  - S2
+  - S3
+- id: R-25
+  title: Unclear lawful basis / disclosure basis
+  domain: Legal
+  category: legal
+  description: Personal data processing/sharing lacks a valid basis
+  treatment: Legal-basis review, disclosure controls
+  weight: 15
+  trigger_keywords:
+  - no lawful basis
+  - unclear legal basis
+  - unauthorized disclosure
+  source_refs:
+  - S2
+  - S3
+- id: R-26
+  title: No fallback or recovery
+  domain: Operational
+  category: operational
+  description: System failure has no tested response or alternative path
+  treatment: Fallback plan, incident response, tested recovery
+  weight: 10
+  trigger_keywords:
+  - no fallback
+  - no recovery plan
+  - no incident response
+  source_refs:
+  - S2
+  - S3
+- id: R-27
+  title: Purpose/mission drift
+  domain: Operational
+  category: operational
+  description: AI is used beyond approved scope or goals
+  treatment: Purpose limits, change control, monitoring
+  weight: 10
+  trigger_keywords:
+  - scope creep
+  - purpose drift
+  - used beyond approved scope
+  source_refs:
+  - S2
+  - S3
+- id: R-28
+  title: Loss of trust
+  domain: Reputational
+  category: reputational
+  description: Opaque, unfair, unsafe, or privacy-invasive AI harms trust
+  treatment: Transparency, fairness, incident handling, redress
+  weight: 5
+  trigger_keywords:
+  - loss of trust
+  - reputational damage
+  - public backlash
+  source_refs:
+  - S2
+  - S3
+- id: R-29
+  title: Negative societal or environmental impact
+  domain: Social/Environmental
+  category: social_environmental
+  description: Deployment produces broader social/environmental harm
+  treatment: Impact assessment and monitoring
+  weight: 10
+  trigger_keywords:
+  - societal harm
+  - environmental impact
+  - negative social impact
+  source_refs:
+  - S2
+  - S3
+- id: R-30
+  title: Unclear ownership/liability
+  domain: Accountability
+  category: accountability
+  description: No named owner for system, model, data, or decision
+  treatment: RACI, sign-offs, accountable owner
+  weight: 10
+  trigger_keywords:
+  - no owner
+  - unclear liability
+  - no accountable party
+  source_refs:
+  - S2
+  - S3
+- id: R-31
+  title: No redress/complaint path
+  domain: Accountability
+  category: accountability
+  description: Affected people cannot challenge harm or outcome
+  treatment: Redress and escalation mechanism
+  weight: 15
+  trigger_keywords:
+  - no redress
+  - no complaint process
+  - no appeal mechanism
+  source_refs:
+  - S2
+  - S3
+- id: R-32
+  title: Hallucination/misinformation
+  domain: GenAI
+  category: genai
+  description: Generated output contains fabricated or misleading content
+  treatment: Grounding/RAG, evaluation, human validation
+  weight: 15
+  trigger_keywords:
+  - hallucination
+  - fabricated content
+  - misinformation
+  - generative ai
+  source_refs:
+  - S2
+  - S3
+- id: R-33
+  title: Prompt/input data leakage
+  domain: GenAI
+  category: genai
+  description: Sensitive information is placed into an external GenAI service
+  treatment: Input filtering, minimization, approved provider/environment
+  weight: 20
+  trigger_keywords:
+  - prompt leakage
+  - data sent to genai
+  - sensitive prompt input
+  source_refs:
+  - S2
+  - S3
+- id: R-34
+  title: IP/content-rights risk
+  domain: GenAI
+  category: genai
+  description: Generated/ingested content creates copyright/ownership issues
+  treatment: IP review, provenance, licensing controls
+  weight: 10
+  trigger_keywords:
+  - copyright risk
+  - ip infringement
+  - content licensing
+  source_refs:
+  - S2
+  - S3
+- id: R-35
+  title: Unsafe autonomous action
+  domain: GenAI
+  category: genai
+  description: Agent can execute tools/actions with excessive autonomy
+  treatment: Tool permissions, action boundaries, human approval, logs
+  weight: 25
+  trigger_keywords:
+  - autonomous agent
+  - unsafe tool execution
+  - excessive agent autonomy
+  source_refs:
+  - S2
+  - S3
 scoring:
   bands:
-    - level: low
-      max_score: 24
-    - level: medium
-      max_score: 49
-    - level: high
-      max_score: 74
-    - level: critical
-      max_score: 100
+  - level: low
+    max_score: 24
+  - level: medium
+    max_score: 49
+  - level: high
+    max_score: 74
+  - level: critical
+    max_score: 100
