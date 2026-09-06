@@ -22,6 +22,61 @@ The platform is built so additional specialized agents (e.g. a Bias/Fairness
 Agent, a Vendor Risk Agent) can be added later without changing the
 orchestration model.
 
+## Enterprise Architecture
+
+How GovernAI sits between the people who own AI risk and the AI use cases
+running across the organization:
+
+```mermaid
+flowchart TB
+    subgraph STAKE["Enterprise Stakeholders"]
+        direction LR
+        GOV[AI Governance Team]
+        RISK[Risk & Compliance Team]
+        SEC[Security Team]
+        DEV[AI Developers /<br/>Solution Architects]
+    end
+
+    subgraph INTAKE["AI Use Cases Across the Organization"]
+        direction LR
+        UC1[Customer-facing<br/>AI Agent]
+        UC2[Internal Automation<br/>Agent]
+        UC3[Third-party /<br/>Vendor AI System]
+    end
+
+    DEV -- submits use case --> ORCH
+
+    subgraph GAI["GovernAI Platform"]
+        ORCH[Governance Orchestrator]
+        RA[Risk Assessment Agent]
+        PA[Policy Compliance Agent]
+        DA[Decision Agent]
+        PR[(Policy Repository)]
+        RR[(Risk Rules)]
+        AL[(Audit Log)]
+
+        ORCH --> RA --> PA --> DA
+        RA -. get_risk_rules .-> RR
+        PA -. get_policies .-> PR
+        ORCH -. every stage .-> AL
+    end
+
+    INTAKE -- intake --> ORCH
+
+    DA -- approve / block --> REPORT[Governance Report]
+    DA -- require human approval --> HUMAN[Human Approval Gate]
+    HUMAN --> GOV
+    REPORT --> RISK
+    REPORT --> SEC
+    AL --> RISK
+```
+
+At enterprise scale, every AI use case — whether built in-house, deployed
+internally, or brought in from a vendor — flows through the same
+orchestrator, gets checked against the same policy and risk rules, and lands
+in the same audit trail, so governance, risk, and security teams get one
+consistent view instead of one-off reviews per team or project.
+
 ## Workflow
 
 ```
