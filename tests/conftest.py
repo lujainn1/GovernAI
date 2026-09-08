@@ -10,6 +10,20 @@ os.environ.setdefault("OPENAI_API_KEY", "test-key")
 
 
 @pytest.fixture(autouse=True)
+def bypass_auth():
+    """Tests exercise the API directly, not through a real Supabase session."""
+    from app.api import app
+    from app.auth import get_current_user
+
+    app.dependency_overrides[get_current_user] = lambda: {
+        "id": "test-user",
+        "email": "test@example.com",
+    }
+    yield
+    app.dependency_overrides.pop(get_current_user, None)
+
+
+@pytest.fixture(autouse=True)
 def isolated_data_dir(tmp_path, monkeypatch):
     """Point every test at a scratch data dir with its own reports/audit log,
     while still reading the real (repo-shipped) policies/risk_rules files."""

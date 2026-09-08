@@ -1,17 +1,47 @@
 import { useState } from 'react'
-import { Building2, Gavel, Scale, ShieldCheck } from 'lucide-react'
+import { Gavel, Globe, Scale, ShieldCheck } from 'lucide-react'
 
 import GovernAILogo from '../components/Logo.jsx'
-import { SIGNED_IN_KEY } from '../auth.js'
+import { signInWithGoogle, signInWithPassword, signUpWithPassword } from '../auth.js'
 
-export default function Login({ onSignedIn }) {
-  const [email, setEmail] = useState('lujain@acme.com')
-  const [password, setPassword] = useState('governai')
+export default function Login() {
+  const [mode, setMode] = useState('sign-in') // 'sign-in' | 'sign-up'
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+  const [info, setInfo] = useState('')
+  const [submitting, setSubmitting] = useState(false)
 
-  function continueIn(event) {
-    event?.preventDefault()
-    localStorage.setItem(SIGNED_IN_KEY, '1')
-    onSignedIn?.()
+  async function handleSubmit(event) {
+    event.preventDefault()
+    setError('')
+    setInfo('')
+    setSubmitting(true)
+
+    try {
+      if (mode === 'sign-up') {
+        const session = await signUpWithPassword(email, password)
+        if (!session) {
+          setInfo('Check your inbox to confirm your email, then sign in.')
+          setMode('sign-in')
+        }
+      } else {
+        await signInWithPassword(email, password)
+      }
+    } catch (err) {
+      setError(err.message || 'Something went wrong. Please try again.')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  async function handleGoogle() {
+    setError('')
+    try {
+      await signInWithGoogle()
+    } catch (err) {
+      setError(err.message || 'Could not start Google sign-in.')
+    }
   }
 
   return (
@@ -56,16 +86,19 @@ export default function Login({ onSignedIn }) {
       </div>
 
       <div className="login-panel">
-        <form className="login-form" onSubmit={continueIn}>
-          <h2>Sign in</h2>
+        <form className="login-form" onSubmit={handleSubmit}>
+          <h2>{mode === 'sign-up' ? 'Create account' : 'Sign in'}</h2>
           <p className="login-form-sub">Governance, risk &amp; compliance workspace</p>
 
           <div className="field">
             <label htmlFor="login-email">Work email</label>
             <input
               id="login-email"
+              type="email"
+              autoComplete="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
+              required
             />
           </div>
 
@@ -74,13 +107,23 @@ export default function Login({ onSignedIn }) {
             <input
               id="login-password"
               type="password"
+              autoComplete={mode === 'sign-up' ? 'new-password' : 'current-password'}
               value={password}
               onChange={(event) => setPassword(event.target.value)}
+              minLength={6}
+              required
             />
           </div>
 
-          <button className="login-submit" type="submit">
-            Sign in
+          {error ? <p className="login-form-error">{error}</p> : null}
+          {info ? <p className="login-form-info">{info}</p> : null}
+
+          <button className="login-submit" type="submit" disabled={submitting}>
+            {submitting
+              ? 'Please wait…'
+              : mode === 'sign-up'
+                ? 'Create account'
+                : 'Sign in'}
           </button>
 
           <div className="login-divider">
@@ -89,10 +132,28 @@ export default function Login({ onSignedIn }) {
             <span />
           </div>
 
-          <button className="login-sso" type="button" onClick={continueIn}>
-            <Building2 size={15} />
-            Continue with SSO
+          <button className="login-sso" type="button" onClick={handleGoogle}>
+            <Globe size={15} />
+            Continue with Google
           </button>
+
+          <p className="login-form-switch">
+            {mode === 'sign-up' ? (
+              <>
+                Already have an account?{' '}
+                <button type="button" onClick={() => setMode('sign-in')}>
+                  Sign in
+                </button>
+              </>
+            ) : (
+              <>
+                Need an account?{' '}
+                <button type="button" onClick={() => setMode('sign-up')}>
+                  Create one
+                </button>
+              </>
+            )}
+          </p>
         </form>
       </div>
     </div>

@@ -1,11 +1,37 @@
-// Cosmetic-only session flag. There is no backend authentication yet — this
-// just gates the sign-in screen so returning visitors skip it.
-export const SIGNED_IN_KEY = 'governai_signed_in'
+import { supabase } from './supabaseClient.js'
 
-export function isSignedIn() {
-  return localStorage.getItem(SIGNED_IN_KEY) === '1'
+export function getSession() {
+  return supabase.auth.getSession().then(({ data }) => data.session)
 }
 
-export function signOut() {
-  localStorage.removeItem(SIGNED_IN_KEY)
+export function onAuthStateChange(callback) {
+  const {
+    data: { subscription },
+  } = supabase.auth.onAuthStateChange((_event, session) => callback(session))
+
+  return () => subscription.unsubscribe()
+}
+
+export async function signInWithPassword(email, password) {
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password })
+  if (error) throw error
+  return data.session
+}
+
+export async function signUpWithPassword(email, password) {
+  const { data, error } = await supabase.auth.signUp({ email, password })
+  if (error) throw error
+  return data.session
+}
+
+export async function signInWithGoogle() {
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: window.location.origin },
+  })
+  if (error) throw error
+}
+
+export async function signOut() {
+  await supabase.auth.signOut()
 }

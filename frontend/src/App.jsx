@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   Bell,
   ChevronRight,
@@ -16,7 +16,7 @@ import {
 import { NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 
 import GovernAILogo from './components/Logo.jsx'
-import { isSignedIn, signOut } from './auth.js'
+import { getSession, onAuthStateChange, signOut } from './auth.js'
 import Login from './pages/Login.jsx'
 import Overview from './pages/Overview.jsx'
 import Reports from './pages/Reports.jsx'
@@ -55,7 +55,7 @@ function pageTitle(pathname) {
   return 'GovernAI'
 }
 
-function AppShell({ onSignOut }) {
+function AppShell({ user, onSignOut }) {
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -109,9 +109,11 @@ function AppShell({ onSignOut }) {
         </div>
 
         <div className="sidebar-user-row">
-          <div className="sidebar-avatar">GA</div>
+          <div className="sidebar-avatar">
+            {(user?.email || 'GA').slice(0, 2).toUpperCase()}
+          </div>
           <div className="sidebar-user-text">
-            <div className="sidebar-user-name">Governance Team</div>
+            <div className="sidebar-user-name">{user?.email || 'Governance Team'}</div>
             <div className="sidebar-user-role">GRC Lead</div>
           </div>
           <LogOut size={15} className="sidebar-signout" onClick={onSignOut} />
@@ -158,20 +160,22 @@ function AppShell({ onSignOut }) {
 }
 
 function App() {
-  const [signedIn, setSignedIn] = useState(isSignedIn())
+  const [session, setSession] = useState(undefined) // undefined = loading
 
-  if (!signedIn) {
-    return <Login onSignedIn={() => setSignedIn(true)} />
+  useEffect(() => {
+    getSession().then(setSession)
+    return onAuthStateChange(setSession)
+  }, [])
+
+  if (session === undefined) {
+    return null
   }
 
-  return (
-    <AppShell
-      onSignOut={() => {
-        signOut()
-        setSignedIn(false)
-      }}
-    />
-  )
+  if (!session) {
+    return <Login />
+  }
+
+  return <AppShell user={session.user} onSignOut={signOut} />
 }
 
 export default App

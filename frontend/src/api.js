@@ -1,8 +1,21 @@
+import { supabase } from './supabaseClient.js'
+
 const BASE_URL = '/api'
+
+async function authHeaders() {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+
+  return session ? { Authorization: `Bearer ${session.access_token}` } : {}
+}
 
 async function request(path, options = {}) {
   const res = await fetch(`${BASE_URL}${path}`, {
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(await authHeaders()),
+    },
     ...options,
   })
 
@@ -53,6 +66,7 @@ export async function extractDocument(file) {
 
   const res = await fetch(`${BASE_URL}/documents/extract`, {
     method: 'POST',
+    headers: await authHeaders(),
     body: formData,
   })
 

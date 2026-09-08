@@ -2,10 +2,11 @@
 
 from typing import List, Optional
 
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import Depends, FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
+from app.auth import get_current_user
 from app.llm_client import ConfigurationError
 from app.models import AIUseCase, AuditEntry, GovernanceReport
 from app.orchestrator import (
@@ -83,12 +84,12 @@ def health() -> dict:
 # POLICIES
 # =========================================================
 
-@app.get("/policies")
+@app.get("/policies", dependencies=[Depends(get_current_user)])
 def list_policies() -> list:
     return get_policies()
 
 
-@app.post("/policies")
+@app.post("/policies", dependencies=[Depends(get_current_user)])
 def create_policy(payload: PolicySubmission) -> dict:
     policy = payload.model_dump()
 
@@ -105,12 +106,12 @@ def create_policy(payload: PolicySubmission) -> dict:
 # RISK RULES
 # =========================================================
 
-@app.get("/risk-rules")
+@app.get("/risk-rules", dependencies=[Depends(get_current_user)])
 def list_risk_rules() -> list:
     return get_risk_rules()
 
 
-@app.post("/risk-rules")
+@app.post("/risk-rules", dependencies=[Depends(get_current_user)])
 def create_risk_rule(payload: RiskRuleSubmission) -> dict:
     rule = payload.model_dump()
 
@@ -130,6 +131,7 @@ def create_risk_rule(payload: RiskRuleSubmission) -> dict:
 @app.post(
     "/use-cases",
     response_model=GovernanceReport,
+    dependencies=[Depends(get_current_user)],
 )
 def submit_use_case(
     payload: UseCaseSubmission,
@@ -150,6 +152,7 @@ def submit_use_case(
 @app.get(
     "/use-cases",
     response_model=List[GovernanceReport],
+    dependencies=[Depends(get_current_user)],
 )
 def get_all_reports() -> List[GovernanceReport]:
     return list_reports()
@@ -158,6 +161,7 @@ def get_all_reports() -> List[GovernanceReport]:
 @app.get(
     "/use-cases/{use_case_id}",
     response_model=GovernanceReport,
+    dependencies=[Depends(get_current_user)],
 )
 def get_report(
     use_case_id: str,
@@ -176,6 +180,7 @@ def get_report(
 @app.post(
     "/use-cases/{use_case_id}/approve",
     response_model=GovernanceReport,
+    dependencies=[Depends(get_current_user)],
 )
 def approve_use_case(
     use_case_id: str,
@@ -208,7 +213,7 @@ def approve_use_case(
 # DOCUMENTS
 # =========================================================
 
-@app.post("/documents/extract")
+@app.post("/documents/extract", dependencies=[Depends(get_current_user)])
 async def extract_document(file: UploadFile = File(...)) -> dict:
     content = await file.read()
 
@@ -241,6 +246,7 @@ async def extract_document(file: UploadFile = File(...)) -> dict:
 @app.get(
     "/audit-log",
     response_model=List[AuditEntry],
+    dependencies=[Depends(get_current_user)],
 )
 def audit_log(
     use_case_id: Optional[str] = None,

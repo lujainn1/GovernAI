@@ -733,6 +733,11 @@
   background-position: 100% 50%;
 }
 
+.login-submit:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
 .login-divider {
   display: flex;
   align-items: center;
@@ -772,6 +777,35 @@
 .login-sso:hover {
   border-color: var(--violet);
   background: rgba(139, 92, 246, 0.08);
+}
+
+.login-form-error {
+  margin: -6px 0 14px;
+  font-size: 12.5px;
+  color: var(--rose-light);
+}
+
+.login-form-info {
+  margin: -6px 0 14px;
+  font-size: 12.5px;
+  color: var(--text-faint);
+}
+
+.login-form-switch {
+  margin: 18px 0 0;
+  text-align: center;
+  font-size: 12.5px;
+  color: var(--text-faint);
+}
+
+.login-form-switch button {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--violet);
+  font-size: inherit;
+  font-weight: 600;
+  cursor: pointer;
 }
 
 @media (max-width: 800px) {
