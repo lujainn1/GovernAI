@@ -83,24 +83,44 @@ consistent view instead of one-off reviews per team or project.
 Input → Risk Assessment → Policy Check → Decision → Human Approval (if needed) → Audit Log
 ```
 
-Every stage writes an entry to an append-only audit log
-(`data/audit_log.jsonl`), and the resulting report is persisted to
-`data/reports/<use_case_id>.json`. If the Decision Agent says
-`require_human_approval`, the use case sits in `pending_human_approval`
+Every stage writes an entry to an append-only audit log (the Supabase
+`audit_log` table), and the resulting report is persisted to the
+`governance_reports` table (one row per use case). If the Decision Agent
+says `require_human_approval`, the use case sits in `pending_human_approval`
 status until a human calls the approve/reject action, which is itself
 logged.
 
 ## How the agents use tools
 
 Agents don't just free-associate — they call real tools (via OpenAI-style
-function calling through the OpenAI API) backed by this repo's data:
+function calling through the OpenAI API) backed by Supabase Postgres:
 
-| Tool | Backing data | Used by |
+| Tool | Backing table | Used by |
 |---|---|---|
-| `get_risk_rules`, `get_scoring_bands` | `data/risk_rules.yaml` | Risk Assessment Agent |
-| `get_policies`, `search_policies` | `data/policies.yaml` | Policy Compliance Agent, Decision Agent |
+| `get_risk_rules`, `get_scoring_bands` | `risk_rules` | Risk Assessment Agent |
+| `get_policies`, `search_policies` | `policies` | Policy Compliance Agent, Decision Agent |
 | `analyze_document` | regex/keyword heuristics over submitted documentation | Risk Assessment Agent, Policy Compliance Agent |
-| `log_event` / audit log | `data/audit_log.jsonl` | orchestrator (every stage) |
+| `log_event` / audit log | `audit_log` | orchestrator (every stage) |
+
+## Data model
+
+GovernAI stores everything in Supabase Postgres (see
+[`supabase/migrations/0001_init_schema.sql`](supabase/migrations/0001_init_schema.sql)):
+
+| Table | Purpose |
+|---|---|
+| `use_cases` | The intake form for an AI system/agent (name, owner, autonomy level, ...) |
+| `policies` | The organizational policy repository (POL-*, SDAIA AI Ethics, PDPL, cross-border transfer, GenAI) |
+| `risk_rules` | The risk-scoring rule set the Risk Assessment Agent uses as guidance |
+| `governance_reports` | One row per use case: risk result, policy compliance result, decision, status, human approval |
+| `audit_log` | Append-only event trail per use case (stage, actor, timestamp, data) |
+| `profiles` | One row per Supabase auth user (role: admin/reviewer/submitter), auto-created on sign-up |
+
+The backend (`app/db.py`) talks to Postgres via the Supabase REST API using
+the **service role key**, so it bypasses Row Level Security — every route in
+`app/api.py` already requires a valid Supabase session, so authorization is
+enforced at the API layer. RLS on these tables defaults to read-only for
+authenticated users, for any future direct-from-client access.
 
 ## Project layout
 
@@ -118,17 +138,20 @@ app/
     audit_log.py           # log_event / get_audit_log
   orchestrator.py       # runs the full workflow, human-approval step
   models.py              # pydantic models (AIUseCase, GovernanceReport, ...)
+  db.py                   # thin Supabase/PostgREST client
   api.py                  # FastAPI app
   cli.py                   # command-line interface
+supabase/
+  migrations/0001_init_schema.sql  # tables, RLS, triggers
+scripts/
+  seed_supabase.py       # one-time load of data/*.yaml into Supabase
 data/
-  policies.yaml          # organizational AI governance policies
-  risk_rules.yaml         # risk-scoring rules
-  reports/                # one JSON governance report per use case (generated)
-  audit_log.jsonl          # append-only audit trail (generated)
+  policies.yaml          # seed source for the `policies` table
+  risk_rules.yaml         # seed source for the `risk_rules` table
 examples/
   sample_use_case.json    # example high-risk AI use case for a demo run
 frontend/                 # React + Vite UI (submit, list, view, approve reports)
-tests/                    # pytest suite (LLM calls are mocked, no API key needed)
+tests/                    # pytest suite (LLM + Supabase calls are mocked, no API key or DB needed)
 ```
 
 ## Setup
@@ -142,6 +165,20 @@ cp .env.example .env
 # edit .env and set OPENAI_API_KEY (get one at https://platform.openai.com/api-keys)
 # OPENAI_MODEL can be any OpenAI model, e.g. gpt-4o-mini, gpt-4o, gpt-4.1-mini
 ```
+
+### Database (Supabase)
+
+1. Create a Supabase project, then in the SQL Editor run
+   [`supabase/migrations/0001_init_schema.sql`](supabase/migrations/0001_init_schema.sql)
+   (or `supabase db push` if you use the CLI).
+2. In `.env`, set `SUPABASE_URL`, `SUPABASE_ANON_KEY` (Project Settings ->
+   API), and `SUPABASE_SERVICE_ROLE_KEY` (same page — keep this one secret,
+   backend-only).
+3. Load the shipped policies/risk rules into the new tables:
+
+   ```bash
+   python -m scripts.seed_supabase
+   ```
 
 To also run the web UI:
 

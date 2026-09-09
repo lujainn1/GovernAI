@@ -19,7 +19,7 @@ from app.models import (
     ReportStatus,
     utcnow_iso,
 )
-from app.reports import load_report, save_report
+from app.reports import load_report, save_report, save_use_case
 from app.tools.audit_log import log_event
 
 
@@ -60,7 +60,10 @@ class GovernanceOrchestrator:
             self._decision_agent = DecisionAgent(model=self._model)
         return self._decision_agent
 
-    def run(self, use_case: AIUseCase) -> GovernanceReport:
+    def run(self, use_case: AIUseCase, created_by: Optional[str] = None) -> GovernanceReport:
+        # Persist the use case first: audit_log.use_case_id foreign-keys to
+        # use_cases, so a row must exist before the first log_event call.
+        save_use_case(use_case, created_by=created_by)
         log_event(use_case.id, "intake", "system", use_case.model_dump(mode="json"))
 
         risk_result = self.risk_agent.assess(use_case)

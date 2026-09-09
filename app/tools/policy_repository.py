@@ -1,58 +1,46 @@
 """Tool: read/write access to the organizational policy repository.
 
-Backed by data/policies.yaml. Exposed to the Policy Compliance Agent
-(and the Decision Agent) as an OpenAI-style callable tool.
+Backed by the Supabase `policies` table. Exposed to the Policy Compliance
+Agent (and the Decision Agent) as an OpenAI-style callable tool.
 """
 
-from functools import lru_cache
 from typing import Any, Dict, List, Optional
 
-import yaml
+from app import db
 
-from app import config
+TABLE = "policies"
+
+# Real columns on the `policies` table. Anything else on a policy dict (e.g.
+# principle, module, lifecycle_phase, evidence_required, source_refs -
+# fields only some governance frameworks use) is stored in the `metadata`
+# jsonb column and merged back to the top level on read, so callers keep
+# seeing the same flat shape the old policies.yaml entries had.
+_CORE_FIELDS = {
+    "id",
+    "title",
+    "category",
+    "description",
+    "status",
+    "coverage",
+    "min_risk_level",
+    "requires",
+}
 
 
-@lru_cache(maxsize=1)
-def _load_policies() -> List[Dict[str, Any]]:
-    with open(config.POLICIES_FILE, "r", encoding="utf-8") as f:
-        data = yaml.safe_load(f) or {}
-
-    return data.get("policies", [])
+def _flatten(row: Dict[str, Any]) -> Dict[str, Any]:
+    metadata = row.pop("metadata", None) or {}
+    return {**metadata, **row}
 
 
 def add_policy(policy: Dict[str, Any]) -> Dict[str, Any]:
-    """Persist a new policy to data/policies.yaml."""
+    """Persist a new policy to the `policies` table."""
 
-    with open(config.POLICIES_FILE, "r", encoding="utf-8") as f:
-        data = yaml.safe_load(f) or {}
+    core = {k: v for k, v in policy.items() if k in _CORE_FIELDS}
+    metadata = {k: v for k, v in policy.items() if k not in _CORE_FIELDS and k != "id"}
+    row = {**core, "metadata": metadata} if metadata else core
 
-    policies = data.get("policies", [])
-
-    policy_id = policy.get("id")
-
-    if policy_id and any(
-        existing.get("id") == policy_id
-        for existing in policies
-    ):
-        raise ValueError(
-            f"Policy with id '{policy_id}' already exists"
-        )
-
-    policies.append(policy)
-    data["policies"] = policies
-
-    with open(config.POLICIES_FILE, "w", encoding="utf-8") as f:
-        yaml.safe_dump(
-            data,
-            f,
-            sort_keys=False,
-            allow_unicode=True,
-        )
-
-    # Clear the cached policy list so new policies appear immediately.
-    _load_policies.cache_clear()
-
-    return policy
+    created = db.insert(TABLE, row)
+    return _flatten(created)
 
 
 def get_policies(
@@ -79,14 +67,11 @@ def get_policies(
         "critical": 3,
     }
 
-    policies = _load_policies()
-
+    params: Dict[str, Any] = {"order": "id.asc"}
     if category:
-        policies = [
-            p
-            for p in policies
-            if p.get("category") == category
-        ]
+        params["category"] = f"eq.{category}"
+
+    policies = [_flatten(dict(row)) for row in db.select(TABLE, params)]
 
     if min_risk_level and min_risk_level in order:
         threshold = order[min_risk_level]
@@ -113,7 +98,7 @@ def search_policies(
 
     return [
         p
-        for p in _load_policies()
+        for p in get_policies()
         if q in p.get("title", "").lower()
         or q in p.get("description", "").lower()
     ]

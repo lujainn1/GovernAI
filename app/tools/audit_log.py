@@ -1,18 +1,16 @@
 """Tool: append-only audit log.
 
 Every stage of the governance workflow (intake, risk assessment, policy
-check, decision, human approval) writes an AuditEntry here. The log is a
-simple JSON-lines file so it stays human-inspectable and easy to ship to a
-SIEM/warehouse later.
+check, decision, human approval) writes an AuditEntry here. Backed by the
+Supabase `audit_log` table, which foreign-keys to `use_cases` so entries
+always trace back to a real use case.
 """
-import json
-import threading
 from typing import Any, Dict, List, Optional
 
-from app import config
+from app import db
 from app.models import AuditEntry
 
-_lock = threading.Lock()
+TABLE = "audit_log"
 
 
 def log_event(use_case_id: str, stage: str, actor: str, data: Optional[Dict[str, Any]] = None) -> AuditEntry:
@@ -27,27 +25,37 @@ def log_event(use_case_id: str, stage: str, actor: str, data: Optional[Dict[str,
         data: arbitrary JSON-serializable payload for this event.
     """
     entry = AuditEntry(use_case_id=use_case_id, stage=stage, actor=actor, data=data or {})
-    config.AUDIT_LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
-    with _lock:
-        with open(config.AUDIT_LOG_FILE, "a", encoding="utf-8") as f:
-            f.write(entry.model_dump_json() + "\n")
+    db.insert(
+        TABLE,
+        {
+            "id": entry.id,
+            "use_case_id": entry.use_case_id,
+            "stage": entry.stage,
+            "actor": entry.actor,
+            "data": entry.data,
+            "created_at": entry.timestamp,
+        },
+    )
     return entry
 
 
 def get_audit_log(use_case_id: Optional[str] = None) -> List[Dict[str, Any]]:
     """Read audit entries, optionally filtered to a single use case."""
-    if not config.AUDIT_LOG_FILE.exists():
-        return []
-    entries: List[Dict[str, Any]] = []
-    with open(config.AUDIT_LOG_FILE, "r", encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if not line:
-                continue
-            entry = json.loads(line)
-            if use_case_id is None or entry.get("use_case_id") == use_case_id:
-                entries.append(entry)
-    return entries
+    params: Dict[str, Any] = {"order": "created_at.asc"}
+    if use_case_id is not None:
+        params["use_case_id"] = f"eq.{use_case_id}"
+
+    return [
+        {
+            "id": row["id"],
+            "use_case_id": row["use_case_id"],
+            "stage": row["stage"],
+            "actor": row["actor"],
+            "timestamp": row["created_at"],
+            "data": row.get("data") or {},
+        }
+        for row in db.select(TABLE, params)
+    ]
 
 
 LOG_EVENT_SCHEMA = {

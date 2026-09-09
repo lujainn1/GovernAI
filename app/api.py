@@ -131,17 +131,17 @@ def create_risk_rule(payload: RiskRuleSubmission) -> dict:
 @app.post(
     "/use-cases",
     response_model=GovernanceReport,
-    dependencies=[Depends(get_current_user)],
 )
 def submit_use_case(
     payload: UseCaseSubmission,
+    user: dict = Depends(get_current_user),
 ) -> GovernanceReport:
     use_case = AIUseCase(**payload.model_dump())
 
     orchestrator = GovernanceOrchestrator()
 
     try:
-        return orchestrator.run(use_case)
+        return orchestrator.run(use_case, created_by=user.get("id"))
     except ConfigurationError as exc:
         raise HTTPException(
             status_code=503,
