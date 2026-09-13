@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: governai-backend
+    name: governai
     runtime: docker
     dockerfilePath: ./Dockerfile
     plan: free
