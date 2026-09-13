@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from app.auth import get_current_user
+from app.config import CORS_ORIGINS
 from app.llm_client import ConfigurationError
 from app.models import AIUseCase, AuditEntry, GovernanceReport
 from app.orchestrator import (
@@ -34,7 +35,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=CORS_ORIGINS,
     allow_methods=["*"],
     allow_headers=["*"],
 )

@@ -242,6 +242,74 @@ Submit a use case, browse reports, and record human approve/reject decisions
 from the browser instead of the CLI or raw API calls. See
 [frontend/README.md](frontend/README.md) for details.
 
+## Deployment
+
+The frontend and backend deploy separately: the React/Vite frontend goes to
+**Vercel** as a static site, and the FastAPI backend is packaged as a
+**Docker** container and deployed to **Render's free web service tier**
+(Vercel does not run arbitrary long-lived containers for a persistent
+backend process; Render does, at no cost and with no credit card required —
+the trade-off is the free instance sleeps after 15 minutes idle and takes
+up to ~60s to wake on the next request). Vercel rewrites `/api/*` through to
+the Render-hosted backend, matching what `frontend/vite.config.js`'s dev
+proxy already does locally.
+
+Do this in order — the Vercel rewrite needs the real Render hostname, and
+the backend's CORS allow-list needs the real Vercel hostname, so each side
+is wired up only after the other exists.
+
+1. **Apply the database schema** to your Supabase project (see
+   [Database (Supabase)](#database-supabase) above) if you haven't already.
+
+2. **Deploy the backend to Render:**
+   - Create a Render account (no card needed) and a new **Web Service**
+     from this repo — Render detects [`render.yaml`](render.yaml) and
+     configures a Docker service (`runtime: docker`, using the root
+     [`Dockerfile`](Dockerfile)) on the **Free** plan automatically.
+   - In the Render dashboard, fill in the env vars marked `sync: false` in
+     `render.yaml`: `OPENAI_API_KEY`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`,
+     `SUPABASE_SERVICE_ROLE_KEY` (leave `GOVERNAI_CORS_ORIGINS` for step 4).
+   - Deploy. Confirm it's healthy: `curl https://<your-app>.onrender.com/health`
+     should return `{"status":"ok"}` (allow ~60s for the first request if the
+     service was asleep). Note the hostname — you'll need it next.
+
+3. **Deploy the frontend to Vercel:**
+   - Create a Vercel project from this repo with **Root Directory set to
+     `frontend`**.
+   - Fill in the real Render hostname from step 2 into
+     [`frontend/vercel.json`](frontend/vercel.json)'s rewrite `destination`,
+     and commit that change.
+   - In the Vercel dashboard (Project Settings → Environment Variables), set
+     `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` (see
+     [`frontend/.env.example`](frontend/.env.example)).
+   - Deploy, and note the production URL.
+   - If you use Google sign-in: add the production Vercel URL to Supabase's
+     Authentication → URL Configuration (Site URL / Redirect URLs) —
+     `frontend/src/auth.js` redirects back to `window.location.origin`, so
+     without this Google sign-in will bounce to `localhost` in production.
+
+4. **Close the CORS loop** now that the Vercel URL exists: in the Render
+   dashboard, set the `GOVERNAI_CORS_ORIGINS` env var to
+   `https://<your-app>.vercel.app` and save (Render redeploys automatically
+   on env var changes). It accepts a comma-separated list if you add a
+   custom domain or additional origins later.
+
+**Redeploying:** Render redeploys the backend automatically on every push to
+the connected branch; Vercel does the same for the frontend (or run
+`vercel --prod` from `frontend/`).
+
+**Local Docker smoke test** (before deploying, no Render/Vercel account
+needed): the local `.env` may not have `SUPABASE_*` keys set — if they're
+missing, `app/auth.py` returns `503` for any authenticated route instead of
+the usual `401`, so add them first for a meaningful test.
+
+```bash
+docker build -t governai-backend .
+docker run --rm -p 8000:8000 --env-file .env governai-backend
+curl http://localhost:8000/health          # -> {"status":"ok"}
+curl http://localhost:8000/policies        # -> 401 Missing bearer token
+```
+
 ## Tests
 
 ```bash

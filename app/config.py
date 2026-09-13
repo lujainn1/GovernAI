@@ -26,6 +26,17 @@ OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
 
 MAX_TOOL_ITERATIONS = int(os.environ.get("GOVERNAI_MAX_TOOL_ITERATIONS", "5"))
 
+# --- CORS -----------------------------------------------------------------
+# Comma-separated list of allowed browser origins for the frontend. Defaults
+# to the local Vite dev server so `python main.py` keeps working out of the
+# box; set GOVERNAI_CORS_ORIGINS in production (e.g. on Fly) to the deployed
+# Vercel URL(s).
+CORS_ORIGINS = [
+    origin.strip()
+    for origin in os.environ.get("GOVERNAI_CORS_ORIGINS", "http://localhost:5173").split(",")
+    if origin.strip()
+]
+
 # --- Supabase (authentication + database) ------------------------------------
 SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_ANON_KEY = os.environ.get("SUPABASE_ANON_KEY")
