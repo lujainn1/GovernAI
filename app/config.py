@@ -24,13 +24,13 @@ RISK_RULES_FILE = DATA_DIR / "risk_rules.yaml"
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
 
-MAX_TOOL_ITERATIONS = int(os.environ.get("GOVERNAI_MAX_TOOL_ITERATIONS", "5"))
+MAX_TOOL_ITERATIONS = int(os.environ.get("GOVERNAI_MAX_TOOL_ITERATIONS", "10"))
 
 # --- CORS -----------------------------------------------------------------
 # Comma-separated list of allowed browser origins for the frontend. Defaults
 # to the local Vite dev server so `python main.py` keeps working out of the
-# box; set GOVERNAI_CORS_ORIGINS in production (e.g. on Fly) to the deployed
-# Vercel URL(s).
+# box; set GOVERNAI_CORS_ORIGINS in production (e.g. on Render) to the
+# deployed Vercel URL(s).
 CORS_ORIGINS = [
     origin.strip()
     for origin in os.environ.get("GOVERNAI_CORS_ORIGINS", "http://localhost:5173").split(",")
