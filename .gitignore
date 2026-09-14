@@ -12,3 +12,12 @@ frontend/dist/
 
 # Local reference material (not project code)
 /*.pdf
+
+# Local IDE settings
+app/.vscode/
+
+# Generated RAG vector index
+data/vectorstore/
+
+# VS Code workspace files
+*.code-workspace
