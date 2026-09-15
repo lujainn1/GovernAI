@@ -6,10 +6,11 @@ from fastapi import Depends, FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
+from app.agents.document_agent import DocumentProcessingAgent, DocumentProcessingError
 from app.auth import get_current_user
 from app.config import CORS_ORIGINS
 from app.llm_client import ConfigurationError
-from app.models import AIUseCase, AuditEntry, GovernanceReport
+from app.models import AIUseCase, AuditEntry, DocumentProcessingResult, GovernanceReport
 from app.orchestrator import (
     GovernanceOrchestrator,
     InvalidApprovalStateError,
@@ -238,6 +239,34 @@ async def extract_document(file: UploadFile = File(...)) -> dict:
         "word_count": result.word_count,
         "pages": result.pages,
     }
+
+
+@app.post(
+    "/documents/process",
+    response_model=DocumentProcessingResult,
+    dependencies=[Depends(get_current_user)],
+)
+async def process_document(file: UploadFile = File(...)) -> DocumentProcessingResult:
+    """Document Processing Agent endpoint: PDF/DOCX in, structured output
+    (language, extracted text, page count, document type) out. Separate
+    from /documents/extract (used by the existing Submit form) so that
+    endpoint's behavior is unaffected."""
+    content = await file.read()
+
+    if len(content) > MAX_FILE_SIZE:
+        raise HTTPException(
+            status_code=413,
+            detail=f"{file.filename} exceeds the 25 MB upload limit.",
+        )
+
+    try:
+        return DocumentProcessingAgent().process(file.filename, content)
+    except UnsupportedFileTypeError as exc:
+        raise HTTPException(status_code=415, detail=str(exc)) from exc
+    except DocumentExtractionError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except DocumentProcessingError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
 # =========================================================

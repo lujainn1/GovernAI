@@ -89,6 +89,29 @@ class GovernanceReport(BaseModel):
     human_approval: Optional[HumanApproval] = None
 
 
+class DocumentLanguage(str, Enum):
+    ARABIC = "arabic"
+    ENGLISH = "english"
+    MIXED = "mixed"
+    UNKNOWN = "unknown"
+
+
+class DocumentProcessingResult(BaseModel):
+    """Structured output of the Document Processing Agent for one uploaded
+    file. `extracted_text` is what gets folded into an AIUseCase's
+    `documentation` field so the Risk and Policy agents can see it."""
+
+    file_name: str
+    file_type: str  # file extension, e.g. "pdf" or "docx"
+    detected_language: DocumentLanguage
+    extracted_text: str
+    page_count: Optional[int] = None
+    document_type: str = "unknown"
+    word_count: int = 0
+    ocr_used: bool = False
+    warnings: List[str] = Field(default_factory=list)
+
+
 class AuditEntry(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     use_case_id: str

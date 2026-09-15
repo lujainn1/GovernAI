@@ -5,9 +5,11 @@ dropzone. Extracted text is handed back to the frontend, which folds it into
 the use case's `documentation` field before submission - the agents then see
 it through the existing `analyze_document` tool, same as pasted-in text.
 
-This is plain text extraction (no OCR): scanned/image-only PDFs or slides
-will yield little or no text, which is surfaced as a low word count rather
-than an error.
+PDF extraction falls back to OCR (see app.tools.ocr) when a page yields
+suspiciously little text - the signature of a scanned/image-only PDF. OCR
+is optional: if the pytesseract/pdf2image stack (and its tesseract/poppler
+system binaries) isn't installed, extraction still succeeds with whatever
+plain-text layer pypdf found, just without the OCR boost.
 """
 from dataclasses import dataclass
 from pathlib import Path
@@ -17,6 +19,13 @@ import openpyxl
 from docx import Document
 from pptx import Presentation
 from pypdf import PdfReader
+
+from app.tools.ocr import ocr_pdf
+
+# Below this many words per page, a PDF is treated as likely scanned/
+# image-only and worth an OCR attempt rather than trusting pypdf's (near-)
+# empty text layer.
+_OCR_WORDS_PER_PAGE_THRESHOLD = 3
 
 
 class UnsupportedFileTypeError(ValueError):
@@ -32,6 +41,7 @@ class ExtractionResult:
     text: str
     word_count: int
     pages: Optional[int] = None
+    ocr_used: bool = False
 
 
 SUPPORTED_EXTENSIONS = {".pdf", ".docx", ".pptx", ".xlsx", ".md", ".txt"}
@@ -44,7 +54,18 @@ def _extract_pdf(content: bytes) -> ExtractionResult:
     reader = PdfReader(BytesIO(content))
     pages_text = [page.extract_text() or "" for page in reader.pages]
     text = "\n\n".join(pages_text).strip()
-    return ExtractionResult(text=text, word_count=len(text.split()), pages=len(reader.pages))
+    page_count = len(reader.pages)
+    word_count = len(text.split())
+
+    ocr_used = False
+    if word_count < _OCR_WORDS_PER_PAGE_THRESHOLD * max(page_count, 1):
+        ocr_text, used = ocr_pdf(content)
+        if used and len(ocr_text.split()) > word_count:
+            text = ocr_text
+            word_count = len(text.split())
+            ocr_used = True
+
+    return ExtractionResult(text=text, word_count=word_count, pages=page_count, ocr_used=ocr_used)
 
 
 def _extract_docx(content: bytes) -> ExtractionResult:
