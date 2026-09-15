@@ -1,0 +1,110 @@
+[
+  {
+    "id": "Q001",
+    "query": "How should an AI system explain automated decisions to people affected by them?",
+    "expected_source": "ai-principles.pdf",
+    "expected_domain": "ai_ethics"
+  },
+  {
+    "id": "Q002",
+    "query": "What safeguards are needed to make AI decisions understandable and accountable?",
+    "expected_source": "ai-principles.pdf",
+    "expected_domain": "ai_ethics"
+  },
+  {
+    "id": "Q003",
+    "query": "What should an organization consider before introducing artificial intelligence across its operations?",
+    "expected_source": "AIAdoptionFramework.pdf",
+    "expected_domain": "ai_governance"
+  },
+  {
+    "id": "Q004",
+    "query": "How can an organization assess its readiness before adopting AI?",
+    "expected_source": "AIAdoptionFramework.pdf",
+    "expected_domain": "ai_governance"
+  },
+  {
+    "id": "Q005",
+    "query": "How should news and media organizations use artificial intelligence responsibly?",
+    "expected_source": "AIPrinciplesMedia.pdf",
+    "expected_domain": "media_ai"
+  },
+  {
+    "id": "Q006",
+    "query": "What safeguards should media organizations apply when publishing AI-generated content?",
+    "expected_source": "AIPrinciplesMedia.pdf",
+    "expected_domain": "media_ai"
+  },
+  {
+    "id": "Q007",
+    "query": "What should a government entity consider before using generative AI with official information?",
+    "expected_source": "GenAIGuidelinesForGovernmentENCompressed.pdf",
+    "expected_domain": "generative_ai"
+  },
+  {
+    "id": "Q008",
+    "query": "Can public-sector employees use generative AI when handling government data?",
+    "expected_source": "GenAIGuidelinesForGovernmentENCompressed.pdf",
+    "expected_domain": "generative_ai"
+  },
+  {
+    "id": "Q009",
+    "query": "How should ordinary users verify information produced by generative artificial intelligence?",
+    "expected_source": "GenerativeAIPublicEN.pdf",
+    "expected_domain": "generative_ai"
+  },
+  {
+    "id": "Q010",
+    "query": "What should members of the public know before relying on AI-generated answers?",
+    "expected_source": "GenerativeAIPublicEN.pdf",
+    "expected_domain": "generative_ai"
+  },
+  {
+    "id": "Q011",
+    "query": "Is it ethical to create synthetic media using someone's face without their permission?",
+    "expected_source": "GuidelinesOnDeepfakeEthics.pdf",
+    "expected_domain": "deepfake_ethics"
+  },
+  {
+    "id": "Q012",
+    "query": "What are the risks of manipulating people with realistic fake videos without disclosure?",
+    "expected_source": "GuidelinesOnDeepfakeEthics.pdf",
+    "expected_domain": "deepfake_ethics"
+  },
+  {
+    "id": "Q013",
+    "query": "How can national AI progress and maturity be measured?",
+    "expected_source": "NAII.pdf",
+    "expected_domain": "ai_governance"
+  },
+  {
+    "id": "Q014",
+    "query": "What indicators can be used to assess national artificial intelligence development?",
+    "expected_source": "NAII.pdf",
+    "expected_domain": "ai_governance"
+  },
+  {
+    "id": "Q015",
+    "query": "What professional skills and responsibilities are expected for data and AI occupations?",
+    "expected_source": "NationalOccupationalStandardFramework.pdf",
+    "expected_domain": "ai_workforce"
+  },
+  {
+    "id": "Q016",
+    "query": "What competency standards define professional roles in data and artificial intelligence jobs?",
+    "expected_source": "NationalOccupationalStandardFramework.pdf",
+    "expected_domain": "ai_workforce"
+  },
+  {
+    "id": "Q017",
+    "query": "What learning outcomes and qualification levels are expected in artificial intelligence education?",
+    "expected_source": "SaudiAcademicFrameworkAIQualifications.pdf",
+    "expected_domain": "ai_education"
+  },
+  {
+    "id": "Q018",
+    "query": "How should academic AI qualifications be structured across education levels?",
+    "expected_source": "SaudiAcademicFrameworkAIQualifications.pdf",
+    "expected_domain": "ai_education"
+  }
+]

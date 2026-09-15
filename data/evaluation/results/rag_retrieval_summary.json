@@ -1,0 +1,15 @@
+{
+  "embedding_model": "text-embedding-3-small",
+  "queries_evaluated": 18,
+  "hit_at_1": 0.8333333333333334,
+  "hit_at_3": 0.9444444444444444,
+  "hit_at_5": 0.9444444444444444,
+  "mrr": 0.8888888888888888,
+  "domain_accuracy_at_5": 0.9444444444444444,
+  "hit_at_1_count": 15,
+  "hit_at_3_count": 17,
+  "hit_at_5_count": 17,
+  "domain_count": 17,
+  "top_1_errors": 3,
+  "top_5_misses": 1
+}
