@@ -1,9 +1,20 @@
+from io import BytesIO
+
+from docx import Document
 from fastapi.testclient import TestClient
 
 from app.api import app
 from app.models import Decision, DecisionResult, PolicyComplianceResult, ComplianceStatus, RiskAssessmentResult, RiskLevel
 
 client = TestClient(app)
+
+
+def _docx_bytes(text: str) -> bytes:
+    doc = Document()
+    doc.add_paragraph(text)
+    buf = BytesIO()
+    doc.save(buf)
+    return buf.getvalue()
 
 
 def _patch_agents(monkeypatch, decision: Decision):
@@ -61,6 +72,45 @@ def test_submit_and_fetch_and_approve_flow(monkeypatch):
     audit_resp = client.get("/audit-log", params={"use_case_id": use_case_id})
     assert audit_resp.status_code == 200
     assert len(audit_resp.json()) >= 5
+
+
+def test_submit_use_case_with_document_flow(monkeypatch):
+    """POST /use-cases/with-document: Upload -> Document Agent ->
+    GovernanceOrchestrator -> Policy Agent + Risk Agent -> Decision Agent."""
+    _patch_agents(monkeypatch, decision=Decision.APPROVE)
+
+    content = _docx_bytes("This Privacy Policy describes how we process personal data.")
+    resp = client.post(
+        "/use-cases/with-document",
+        data={"name": "Doc Use Case", "description": "desc", "owner": "team"},
+        files={"file": ("policy.docx", content, "application/vnd.openxmlformats-officedocument.wordprocessingml.document")},
+    )
+
+    assert resp.status_code == 200
+    body = resp.json()
+
+    assert body["document"]["detected_language"] == "english"
+    assert body["document"]["file_type"] == "docx"
+    assert "Privacy Policy" in body["document"]["extracted_text"]
+
+    assert body["report"]["decision"]["decision"] == "approve"
+    assert "Privacy Policy" in body["report"]["use_case"]["documentation"]
+
+    use_case_id = body["report"]["use_case"]["id"]
+    audit_resp = client.get("/audit-log", params={"use_case_id": use_case_id})
+    stages = [e["stage"] for e in audit_resp.json()]
+    assert stages[0] == "document_processing"
+
+
+def test_submit_use_case_with_document_rejects_unsupported_type(monkeypatch):
+    _patch_agents(monkeypatch, decision=Decision.APPROVE)
+
+    resp = client.post(
+        "/use-cases/with-document",
+        data={"name": "Doc Use Case", "description": "desc", "owner": "team"},
+        files={"file": ("notes.txt", b"plain text", "text/plain")},
+    )
+    assert resp.status_code == 415
 
 
 def test_get_missing_use_case_404():

@@ -112,6 +112,16 @@ class DocumentProcessingResult(BaseModel):
     warnings: List[str] = Field(default_factory=list)
 
 
+class DocumentGovernanceReport(BaseModel):
+    """Response shape for the document-upload governance flow: the raw
+    Document Processing Agent output alongside the GovernanceReport that
+    resulted from feeding its extracted text through the existing
+    Risk/Policy/Decision pipeline."""
+
+    document: DocumentProcessingResult
+    report: GovernanceReport
+
+
 class AuditEntry(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     use_case_id: str

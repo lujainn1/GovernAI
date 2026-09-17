@@ -2,7 +2,7 @@
 
 from typing import List, Optional
 
-from fastapi import Depends, FastAPI, File, HTTPException, UploadFile
+from fastapi import Depends, FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -10,7 +10,13 @@ from app.agents.document_agent import DocumentProcessingAgent, DocumentProcessin
 from app.auth import get_current_user
 from app.config import CORS_ORIGINS
 from app.llm_client import ConfigurationError
-from app.models import AIUseCase, AuditEntry, DocumentProcessingResult, GovernanceReport
+from app.models import (
+    AIUseCase,
+    AuditEntry,
+    DocumentGovernanceReport,
+    DocumentProcessingResult,
+    GovernanceReport,
+)
 from app.orchestrator import (
     GovernanceOrchestrator,
     InvalidApprovalStateError,
@@ -149,6 +155,62 @@ def submit_use_case(
             status_code=503,
             detail=str(exc),
         ) from exc
+
+
+@app.post(
+    "/use-cases/with-document",
+    response_model=DocumentGovernanceReport,
+)
+async def submit_use_case_with_document(
+    name: str = Form(...),
+    description: str = Form(...),
+    owner: str = Form(...),
+    data_classification: Optional[str] = Form(None),
+    deployment_context: Optional[str] = Form(None),
+    autonomy_level: Optional[str] = Form(None),
+    documentation: Optional[str] = Form(None),
+    file: UploadFile = File(...),
+    user: dict = Depends(get_current_user),
+) -> DocumentGovernanceReport:
+    """Same governance pipeline as POST /use-cases, but the documentation
+    comes from an uploaded PDF/DOCX instead of (or in addition to) pasted
+    text: the file goes through the Document Processing Agent first, and
+    its extracted text feeds the existing Risk/Policy/Decision agents via
+    GovernanceOrchestrator.run_with_document."""
+    content = await file.read()
+
+    if len(content) > MAX_FILE_SIZE:
+        raise HTTPException(
+            status_code=413,
+            detail=f"{file.filename} exceeds the 25 MB upload limit.",
+        )
+
+    use_case = AIUseCase(
+        name=name,
+        description=description,
+        owner=owner,
+        data_classification=data_classification,
+        deployment_context=deployment_context,
+        autonomy_level=autonomy_level,
+        documentation=documentation,
+    )
+
+    orchestrator = GovernanceOrchestrator()
+
+    try:
+        report, doc_result = orchestrator.run_with_document(
+            use_case, file.filename, content, created_by=user.get("id")
+        )
+    except UnsupportedFileTypeError as exc:
+        raise HTTPException(status_code=415, detail=str(exc)) from exc
+    except DocumentExtractionError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except DocumentProcessingError as exc:
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
+    except ConfigurationError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+    return DocumentGovernanceReport(document=doc_result, report=report)
 
 
 @app.get(

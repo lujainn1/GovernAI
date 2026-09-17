@@ -3,17 +3,26 @@
     Input -> Risk Assessment -> Policy Check -> Decision
           -> Human Approval (if required) -> Audit Log
 
+Optionally, the input can be a document upload instead of pasted-in
+documentation:
+
+    Document Upload -> Document Processing Agent
+                     -> Risk Assessment -> Policy Check -> Decision
+                     -> Human Approval (if required) -> Audit Log
+
 Each stage's output is written to the audit log, and the resulting
 GovernanceReport is persisted so it can be looked up or approved later.
 """
-from typing import Optional
+from typing import Optional, Tuple
 
 from app.agents.decision_agent import DecisionAgent
+from app.agents.document_agent import DocumentProcessingAgent
 from app.agents.policy_agent import PolicyComplianceAgent
 from app.agents.risk_agent import RiskAssessmentAgent
 from app.models import (
     AIUseCase,
     Decision,
+    DocumentProcessingResult,
     GovernanceReport,
     HumanApproval,
     ReportStatus,
@@ -38,9 +47,16 @@ class GovernanceOrchestrator:
 
     def __init__(self, model: Optional[str] = None):
         self._model = model
+        self._document_agent: Optional[DocumentProcessingAgent] = None
         self._risk_agent: Optional[RiskAssessmentAgent] = None
         self._policy_agent: Optional[PolicyComplianceAgent] = None
         self._decision_agent: Optional[DecisionAgent] = None
+
+    @property
+    def document_agent(self) -> DocumentProcessingAgent:
+        if self._document_agent is None:
+            self._document_agent = DocumentProcessingAgent()
+        return self._document_agent
 
     @property
     def risk_agent(self) -> RiskAssessmentAgent:
@@ -101,6 +117,58 @@ class GovernanceOrchestrator:
         save_report(report)
         log_event(use_case.id, "report_finalized", "system", {"status": status.value})
         return report
+
+    def run_with_document(
+        self,
+        use_case: AIUseCase,
+        filename: str,
+        content: bytes,
+        created_by: Optional[str] = None,
+    ) -> Tuple[GovernanceReport, DocumentProcessingResult]:
+        """Same pipeline as `run`, but the use case's documentation comes
+        from an uploaded file instead of (or in addition to) pasted-in
+        text:
+
+            Document Upload -> Document Processing Agent
+                             -> Risk Assessment -> Policy Check -> Decision
+
+        The Document Processing Agent extracts the text and detects its
+        language *before* the use case is persisted or any other agent
+        runs. Its output is folded into `use_case.documentation` - the
+        same field the Risk and Policy agents already read via
+        `app.tools.document_analysis.analyze_document` - so this method
+        does not touch those agents or the Decision agent at all; it just
+        feeds them through the field they already consume.
+
+        Raises:
+            UnsupportedFileTypeError: extension isn't .pdf or .docx.
+            DocumentExtractionError: the file is corrupted/unparsable.
+            DocumentProcessingError: an unexpected failure while analyzing
+                the extracted text.
+            (all raised by DocumentProcessingAgent.process; none of them
+            persist a use case or write an audit entry, so a failed
+            upload leaves no partial state behind.)
+        """
+        doc_result = self.document_agent.process(filename, content)
+
+        # Persist early so the document_processing audit entry (which
+        # needs use_cases.id to exist, per its foreign key) lands before
+        # the "intake" entry that `run` will add for the same use case.
+        save_use_case(use_case, created_by=created_by)
+        log_event(
+            use_case.id,
+            "document_processing",
+            self.document_agent.name,
+            doc_result.model_dump(mode="json"),
+        )
+
+        extracted = DocumentProcessingAgent.to_documentation(doc_result)
+        use_case.documentation = (
+            f"{use_case.documentation}\n\n{extracted}" if use_case.documentation else extracted
+        )
+
+        report = self.run(use_case, created_by=created_by)
+        return report, doc_result
 
     def apply_human_decision(
         self, use_case_id: str, approved: bool, approver: str, notes: Optional[str] = None
