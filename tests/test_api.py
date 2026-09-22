@@ -1,8 +1,11 @@
 from io import BytesIO
 
+import httpx
+import openai
 from docx import Document
 from fastapi.testclient import TestClient
 
+from app.agents.base import AgentError
 from app.api import app
 from app.models import (
     ComplianceStatus,
@@ -138,3 +141,52 @@ def test_approve_missing_use_case_404():
         "/use-cases/does-not-exist/approve", json={"approved": True, "approver": "jane"}
     )
     assert resp.status_code == 404
+
+
+def test_submit_use_case_agent_error_returns_502(monkeypatch):
+    """A malformed structured response (e.g. a required field the model
+    dropped) should surface as a 502 with the validation detail, not an
+    opaque, bodyless 500."""
+
+    def _raise(self, use_case):
+        raise AgentError(
+            "review_agent produced output that does not match ReviewResult: "
+            "1 validation error for ReviewResult\nrationale\n  Field required"
+        )
+
+    monkeypatch.setattr("app.agents.risk_agent.RiskAssessmentAgent.assess", _raise)
+
+    resp = client.post("/use-cases", json={"name": "Test", "description": "desc", "owner": "team"})
+    assert resp.status_code == 502
+    assert "does not match ReviewResult" in resp.json()["detail"]
+
+
+def test_submit_use_case_openai_authentication_error_returns_502(monkeypatch):
+    """An invalid/revoked OPENAI_API_KEY should surface as a 502 that names
+    the key as the problem, not an opaque 500."""
+
+    def _raise(self, use_case):
+        request = httpx.Request("POST", "https://api.openai.com/v1/chat/completions")
+        response = httpx.Response(401, request=request)
+        raise openai.AuthenticationError("Incorrect API key provided", response=response, body=None)
+
+    monkeypatch.setattr("app.agents.risk_agent.RiskAssessmentAgent.assess", _raise)
+
+    resp = client.post("/use-cases", json={"name": "Test", "description": "desc", "owner": "team"})
+    assert resp.status_code == 502
+    assert "OPENAI_API_KEY" in resp.json()["detail"]
+
+
+def test_submit_use_case_openai_error_returns_502(monkeypatch):
+    """Any other OpenAI-side failure (rate limit, timeout, network) should
+    also surface as a 502 instead of an opaque 500."""
+
+    def _raise(self, use_case):
+        request = httpx.Request("POST", "https://api.openai.com/v1/chat/completions")
+        raise openai.APIConnectionError(request=request)
+
+    monkeypatch.setattr("app.agents.risk_agent.RiskAssessmentAgent.assess", _raise)
+
+    resp = client.post("/use-cases", json={"name": "Test", "description": "desc", "owner": "team"})
+    assert resp.status_code == 502
+    assert "OpenAI API request failed" in resp.json()["detail"]

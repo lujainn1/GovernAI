@@ -2,10 +2,13 @@
 
 from typing import List, Optional
 
-from fastapi import Depends, FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from openai import AuthenticationError as OpenAIAuthenticationError, OpenAIError
 from pydantic import BaseModel
 
+from app.agents.base import AgentError
 from app.agents.document_agent import DocumentProcessingAgent, DocumentProcessingError
 from app.auth import get_current_user
 from app.config import CORS_ORIGINS
@@ -46,6 +49,38 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# Any route that runs an agent (directly or via GovernanceOrchestrator) can
+# fail because of the OpenAI call underneath it, not because of anything
+# wrong with the request. Without these handlers that failure reaches
+# Starlette's default handler, which returns a bare, bodyless 500 with no
+# indication of what went wrong. Both are upstream-service failures, so they
+# respond 502 (this API is fine; the OpenAI call it depends on failed) with
+# a message that actually says what happened.
+@app.exception_handler(AgentError)
+async def agent_error_handler(request: Request, exc: AgentError) -> JSONResponse:
+    """An agent's final answer didn't match its expected schema - e.g. the
+    model dropped a required field. Usually a transient LLM output glitch;
+    resubmitting typically succeeds."""
+    return JSONResponse(status_code=502, content={"detail": str(exc)})
+
+
+@app.exception_handler(OpenAIAuthenticationError)
+async def openai_authentication_error_handler(
+    request: Request, exc: OpenAIAuthenticationError
+) -> JSONResponse:
+    return JSONResponse(
+        status_code=502,
+        content={"detail": f"OpenAI rejected the configured OPENAI_API_KEY: {exc}"},
+    )
+
+
+@app.exception_handler(OpenAIError)
+async def openai_error_handler(request: Request, exc: OpenAIError) -> JSONResponse:
+    """Catch-all for other OpenAI failures (rate limits, timeouts, network
+    errors, bad requests) that aren't the more specific auth case above."""
+    return JSONResponse(status_code=502, content={"detail": f"OpenAI API request failed: {exc}"})
 
 
 class UseCaseSubmission(BaseModel):
