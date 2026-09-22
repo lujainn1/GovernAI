@@ -57,6 +57,10 @@ class BaseAgent:
         self.tools = tools or []
         self.tool_functions = tool_functions or {}
         self.model = model or config.OPENAI_MODEL
+        # Long-term memory (see app.memory): the orchestrator sets this to the
+        # recalled past cases for the run in progress, and `run` appends it to
+        # the input. Empty means the agent runs without precedent.
+        self.memory_context: str = ""
 
     def run(
         self,
@@ -66,6 +70,9 @@ class BaseAgent:
     ) -> ResponseModel:
         max_tool_iterations = max_tool_iterations or config.MAX_TOOL_ITERATIONS
         client = get_client()
+
+        if self.memory_context:
+            user_message = f"{user_message}\n\n{self.memory_context}"
 
         schema_hint = (
             "When you are ready to give your final answer, respond with ONLY a "

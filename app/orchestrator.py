@@ -1,13 +1,22 @@
 """Orchestrates the end-to-end governance workflow:
 
-    Input -> Risk Assessment -> Policy Check -> Decision
+    Input -> Risk Assessment -> Policy Check -> Decision -> Review
           -> Human Approval (if required) -> Audit Log
+
+Before the agents run, the most similar past cases are recalled from
+long-term memory (app.memory) and handed to all of them as precedent; each
+finished case is remembered afterwards, and its remembered outcome is
+updated when a human approves or rejects it.
+
+The Review Agent critiques the Decision (and the findings behind it). If it
+asks for a revision, the Decision Agent re-runs with the reviewer's feedback
+and the result is reviewed again, up to `config.MAX_REVIEW_REVISIONS` times.
 
 Optionally, the input can be a document upload instead of pasted-in
 documentation:
 
     Document Upload -> Document Processing Agent
-                     -> Risk Assessment -> Policy Check -> Decision
+                     -> Risk Assessment -> Policy Check -> Decision -> Review
                      -> Human Approval (if required) -> Audit Log
 
 Each stage's output is written to the audit log, and the resulting
@@ -15,17 +24,30 @@ GovernanceReport is persisted so it can be looked up or approved later.
 """
 from typing import Optional, Tuple
 
+from app import config
 from app.agents.decision_agent import DecisionAgent
 from app.agents.document_agent import DocumentProcessingAgent
 from app.agents.policy_agent import PolicyComplianceAgent
+from app.agents.review_agent import ReviewAgent
 from app.agents.risk_agent import RiskAssessmentAgent
+from app.memory import (
+    format_memory_context,
+    remember_case,
+    retrieve_similar_cases,
+    update_case_outcome,
+)
 from app.models import (
     AIUseCase,
     Decision,
+    DecisionResult,
     DocumentProcessingResult,
     GovernanceReport,
     HumanApproval,
+    PolicyComplianceResult,
     ReportStatus,
+    ReviewResult,
+    ReviewVerdict,
+    RiskAssessmentResult,
     utcnow_iso,
 )
 from app.reports import load_report, save_report, save_use_case
@@ -40,6 +62,24 @@ class InvalidApprovalStateError(RuntimeError):
     pass
 
 
+def _escalate_unresolved_review(decision: DecisionResult, review: ReviewResult) -> DecisionResult:
+    """Turn an `approve` the Review Agent never signed off on into
+    `require_human_approval`, with a clearly-labeled note in the rationale
+    (same auto-correction pattern as risk_agent._reconcile_with_bands)."""
+    outstanding = "; ".join(review.issues) or review.rationale
+    note = (
+        "\n\n(Note: decision auto-escalated from 'approve' to 'require_human_approval': "
+        "the Review Agent still had unresolved issues after the maximum number of "
+        f"revisions. Outstanding: {outstanding})"
+    )
+    return decision.model_copy(
+        update={
+            "decision": Decision.REQUIRE_HUMAN_APPROVAL,
+            "rationale": decision.rationale + note,
+        }
+    )
+
+
 class GovernanceOrchestrator:
     """Runs the governance pipeline. Agents (and the OpenAI client they
     need) are created lazily, so simply instantiating the orchestrator to
@@ -51,6 +91,7 @@ class GovernanceOrchestrator:
         self._risk_agent: Optional[RiskAssessmentAgent] = None
         self._policy_agent: Optional[PolicyComplianceAgent] = None
         self._decision_agent: Optional[DecisionAgent] = None
+        self._review_agent: Optional[ReviewAgent] = None
 
     @property
     def document_agent(self) -> DocumentProcessingAgent:
@@ -76,11 +117,19 @@ class GovernanceOrchestrator:
             self._decision_agent = DecisionAgent(model=self._model)
         return self._decision_agent
 
+    @property
+    def review_agent(self) -> ReviewAgent:
+        if self._review_agent is None:
+            self._review_agent = ReviewAgent(model=self._model)
+        return self._review_agent
+
     def run(self, use_case: AIUseCase, created_by: Optional[str] = None) -> GovernanceReport:
         # Persist the use case first: audit_log.use_case_id foreign-keys to
         # use_cases, so a row must exist before the first log_event call.
         save_use_case(use_case, created_by=created_by)
         log_event(use_case.id, "intake", "system", use_case.model_dump(mode="json"))
+
+        self._recall_similar_cases(use_case)
 
         risk_result = self.risk_agent.assess(use_case)
         log_event(
@@ -100,6 +149,10 @@ class GovernanceOrchestrator:
             use_case.id, "decision", self.decision_agent.name, decision_result.model_dump(mode="json")
         )
 
+        decision_result = self._review_and_revise(
+            use_case, risk_result, compliance_result, decision_result
+        )
+
         if decision_result.decision == Decision.REQUIRE_HUMAN_APPROVAL:
             status = ReportStatus.PENDING_HUMAN_APPROVAL
         elif decision_result.decision == Decision.BLOCK:
@@ -116,7 +169,75 @@ class GovernanceOrchestrator:
         )
         save_report(report)
         log_event(use_case.id, "report_finalized", "system", {"status": status.value})
+        remember_case(report)
         return report
+
+    def _recall_similar_cases(self, use_case: AIUseCase) -> None:
+        """Recall the past cases most similar to this one and hand them to
+        every agent as precedent. The audit log records which cases were
+        recalled (ids and similarity, not their content), so it is always
+        possible to see what informed a decision. Nothing is recalled - and
+        nothing is logged - when memory is empty, disabled or unavailable."""
+        hits = retrieve_similar_cases(use_case)
+        context = format_memory_context(hits)
+        for agent in (self.risk_agent, self.policy_agent, self.decision_agent, self.review_agent):
+            agent.memory_context = context
+        if hits:
+            log_event(
+                use_case.id,
+                "memory_retrieval",
+                "agent_memory",
+                {
+                    "cases": [
+                        {"use_case_id": hit.use_case_id, "similarity": round(hit.similarity, 4)}
+                        for hit in hits
+                    ]
+                },
+            )
+
+    def _review_and_revise(
+        self,
+        use_case: AIUseCase,
+        risk: RiskAssessmentResult,
+        compliance: PolicyComplianceResult,
+        decision: DecisionResult,
+    ) -> DecisionResult:
+        """Decision -> Review -> (revise Decision -> Review)* loop.
+
+        Every review and every revised decision is written to the audit
+        log. If the reviewer is still unsatisfied once the revision budget
+        is spent, an `approve` is escalated to human approval - a decision
+        the reviewer could not sign off on must not auto-complete. A
+        `block` or `require_human_approval` needs no escalation: neither
+        lets the use case go live without a person.
+        """
+        review = self.review_agent.review(use_case, risk, compliance, decision)
+        log_event(use_case.id, "review", self.review_agent.name, review.model_dump(mode="json"))
+
+        revisions = 0
+        while (
+            review.verdict == ReviewVerdict.NEEDS_REVISION
+            and revisions < config.MAX_REVIEW_REVISIONS
+        ):
+            revisions += 1
+            decision = self.decision_agent.decide(
+                use_case, risk, compliance, previous_decision=decision, review=review
+            )
+            log_event(
+                use_case.id,
+                "decision_revision",
+                self.decision_agent.name,
+                decision.model_dump(mode="json"),
+            )
+            review = self.review_agent.review(use_case, risk, compliance, decision)
+            log_event(
+                use_case.id, "review", self.review_agent.name, review.model_dump(mode="json")
+            )
+
+        if review.verdict == ReviewVerdict.NEEDS_REVISION and decision.decision == Decision.APPROVE:
+            decision = _escalate_unresolved_review(decision, review)
+            log_event(use_case.id, "review_escalation", "system", decision.model_dump(mode="json"))
+        return decision
 
     def run_with_document(
         self,
@@ -192,4 +313,5 @@ class GovernanceOrchestrator:
             approver,
             {"approved": approved, "notes": notes, "resulting_status": report.status.value},
         )
+        update_case_outcome(report)
         return report

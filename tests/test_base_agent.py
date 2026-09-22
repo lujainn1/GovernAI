@@ -107,3 +107,19 @@ def test_agent_raises_after_max_tool_iterations(monkeypatch):
     )
     with pytest.raises(AgentError):
         agent.run("go", EchoResult, max_tool_iterations=3)
+
+
+def test_agent_appends_memory_context_to_the_user_message(monkeypatch):
+    final = json.dumps({"value": 1, "note": "ok"})
+    fake_client = FakeClient([_completion(content=final), _completion(content=final)])
+    monkeypatch.setattr("app.agents.base.get_client", lambda: fake_client)
+
+    agent = BaseAgent(system_prompt="test agent")
+    agent.run("go", EchoResult)  # no memory: the input is sent untouched
+
+    agent.memory_context = "Relevant Past Cases (long-term memory)\n[1] similarity 0.80"
+    agent.run("go", EchoResult)
+
+    sent = [call["messages"][1]["content"] for call in fake_client.calls]
+    assert sent[0] == "go"
+    assert sent[1] == "go\n\nRelevant Past Cases (long-term memory)\n[1] similarity 0.80"

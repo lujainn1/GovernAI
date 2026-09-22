@@ -26,6 +26,27 @@ OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
 
 MAX_TOOL_ITERATIONS = int(os.environ.get("GOVERNAI_MAX_TOOL_ITERATIONS", "10"))
 
+# How many times the Review Agent may send the Decision Agent back for a
+# revision before the orchestrator gives up on convergence. 0 keeps the
+# review (and its audit entry) but never re-runs the Decision Agent.
+MAX_REVIEW_REVISIONS = int(os.environ.get("GOVERNAI_MAX_REVIEW_REVISIONS", "1"))
+
+# --- Long-term agent memory -----------------------------------------------
+# Finished cases are embedded and stored in Supabase (agent_memory table, see
+# app/memory.py); before the agents run, the most similar past cases are
+# handed to them as precedent. Memory is best-effort: if it can't be read or
+# written the agents simply run without it.
+MEMORY_ENABLED = os.environ.get("GOVERNAI_MEMORY_ENABLED", "true").strip().lower() not in {
+    "0",
+    "false",
+    "no",
+    "off",
+}
+MEMORY_TOP_K = int(os.environ.get("GOVERNAI_MEMORY_TOP_K", "3"))
+# Cosine similarity a past case must reach to be recalled (0-1, higher = stricter).
+MEMORY_MIN_SIMILARITY = float(os.environ.get("GOVERNAI_MEMORY_MIN_SIMILARITY", "0.35"))
+EMBEDDING_MODEL = os.environ.get("GOVERNAI_EMBEDDING_MODEL", "text-embedding-3-small")
+
 # --- CORS -----------------------------------------------------------------
 # Comma-separated list of allowed browser origins for the frontend. Defaults
 # to the local Vite dev server so `python main.py` keeps working out of the

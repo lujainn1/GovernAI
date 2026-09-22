@@ -10,9 +10,15 @@ from app.models import (
     AIUseCase,
     DecisionResult,
     PolicyComplianceResult,
+    ReviewResult,
     RiskAssessmentResult,
 )
-from app.prompts import build_compliance_context, build_risk_context, build_use_case_brief
+from app.prompts import (
+    build_compliance_context,
+    build_review_feedback_context,
+    build_risk_context,
+    build_use_case_brief,
+)
 from app.tools.policy_repository import GET_POLICIES_SCHEMA, get_policies
 
 SYSTEM_PROMPT = """You are the Decision Agent inside a Multi-Agent AI \
@@ -56,10 +62,19 @@ class DecisionAgent(BaseAgent):
         use_case: AIUseCase,
         risk: RiskAssessmentResult,
         compliance: PolicyComplianceResult,
+        previous_decision: Optional[DecisionResult] = None,
+        review: Optional[ReviewResult] = None,
     ) -> DecisionResult:
+        """Recommend approve / require_human_approval / block.
+
+        On a revision pass the orchestrator supplies `previous_decision`
+        and the Review Agent's `review` of it, and the model is asked to
+        address that feedback."""
         message = (
             f"{build_use_case_brief(use_case)}\n\n"
             f"{build_risk_context(risk)}\n\n"
             f"{build_compliance_context(compliance)}"
         )
+        if previous_decision is not None and review is not None:
+            message += f"\n\n{build_review_feedback_context(previous_decision, review)}"
         return self.run(message, DecisionResult)

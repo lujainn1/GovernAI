@@ -30,6 +30,11 @@ class Decision(str, Enum):
     BLOCK = "block"
 
 
+class ReviewVerdict(str, Enum):
+    APPROVED = "approved"
+    NEEDS_REVISION = "needs_revision"
+
+
 class ReportStatus(str, Enum):
     COMPLETED = "completed"
     PENDING_HUMAN_APPROVAL = "pending_human_approval"
@@ -68,6 +73,19 @@ class PolicyComplianceResult(BaseModel):
 class DecisionResult(BaseModel):
     decision: Decision
     conditions: List[str] = Field(default_factory=list)
+    rationale: str
+
+
+class ReviewResult(BaseModel):
+    """The Review Agent's critique of the Risk / Policy / Decision output.
+
+    `issues` are substantive problems (only meaningful with a
+    `needs_revision` verdict); `suggestions` are concrete fixes and can
+    also accompany an `approved` verdict as non-blocking improvements."""
+
+    verdict: ReviewVerdict
+    issues: List[str] = Field(default_factory=list)
+    suggestions: List[str] = Field(default_factory=list)
     rationale: str
 
 

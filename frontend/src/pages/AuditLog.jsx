@@ -5,7 +5,7 @@ import { pretty, timeAgo } from '../format.js'
 
 const FILTERS = {
   'All stages': null,
-  'Agent runs': ['risk_assessment', 'policy_compliance', 'decision'],
+  'Agent runs': ['risk_assessment', 'policy_compliance', 'decision', 'review', 'decision_revision'],
   'Tool calls': ['tool_call'],
   'Human decisions': ['human_approval'],
 }

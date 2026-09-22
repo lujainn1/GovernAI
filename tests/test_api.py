@@ -4,7 +4,16 @@ from docx import Document
 from fastapi.testclient import TestClient
 
 from app.api import app
-from app.models import Decision, DecisionResult, PolicyComplianceResult, ComplianceStatus, RiskAssessmentResult, RiskLevel
+from app.models import (
+    ComplianceStatus,
+    Decision,
+    DecisionResult,
+    PolicyComplianceResult,
+    ReviewResult,
+    ReviewVerdict,
+    RiskAssessmentResult,
+    RiskLevel,
+)
 
 client = TestClient(app)
 
@@ -32,7 +41,13 @@ def _patch_agents(monkeypatch, decision: Decision):
     )
     monkeypatch.setattr(
         "app.agents.decision_agent.DecisionAgent.decide",
-        lambda self, uc, risk, compliance: decision_result,
+        lambda self, uc, risk, compliance, **kwargs: decision_result,
+    )
+    monkeypatch.setattr(
+        "app.agents.review_agent.ReviewAgent.review",
+        lambda self, uc, risk, compliance, decision: ReviewResult(
+            verdict=ReviewVerdict.APPROVED, rationale="consistent"
+        ),
     )
 
 
