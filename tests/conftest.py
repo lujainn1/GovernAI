@@ -36,7 +36,9 @@ def fake_supabase(monkeypatch):
     ships in data/*.yaml (the same data scripts/seed_supabase.py loads)."""
     from app import config, db as db_module
     from app.evaluation.sandbox import InMemoryDB
+    from app.observability.metrics import clear_window_cache
 
+    clear_window_cache()  # a previous test's window must not leak into this one
     fake = InMemoryDB()
     monkeypatch.setattr(db_module, "select", fake.select)
     monkeypatch.setattr(db_module, "insert", fake.insert)

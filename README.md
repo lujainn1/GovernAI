@@ -276,6 +276,7 @@ supabase/
   migrations/0001_init_schema.sql  # tables, RLS, triggers
   migrations/0002_agent_memory.sql # agent_memory table (long-term agent memory)
   migrations/0004_pipeline_runs.sql # pipeline_runs table (step-by-step approval)
+  migrations/0006_read_indexes.sql # indexes for the list/monitoring pages
 scripts/
   seed_supabase.py       # one-time load of data/*.yaml into Supabase
 data/
@@ -316,7 +317,9 @@ cp .env.example .env
    Finally run
    [`supabase/migrations/0005_risk_rule_suggestions.sql`](supabase/migrations/0005_risk_rule_suggestions.sql)
    (**required**: saving a report writes its `risk_suggested_new_rules`
-   column, so without it every report save fails).
+   column, so without it every report save fails), and optionally
+   [`supabase/migrations/0006_read_indexes.sql`](supabase/migrations/0006_read_indexes.sql)
+   (indexes that keep the reports, runs and monitoring pages fast as data grows).
    (`supabase db push` applies all migrations.)
 2. In `.env`, set `SUPABASE_URL`, `SUPABASE_ANON_KEY` (Project Settings ->
    API), and `SUPABASE_SERVICE_ROLE_KEY` (same page — keep this one secret,

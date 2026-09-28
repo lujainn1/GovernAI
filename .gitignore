@@ -21,3 +21,4 @@ data/vectorstore/
 
 # VS Code workspace files
 *.code-workspace
+.venv.zip

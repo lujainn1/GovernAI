@@ -50,6 +50,8 @@ from app.tools.risk_rules import add_risk_rule, get_risk_rules
 
 http_logger = logging.getLogger("governai.http")
 
+MAX_UNFILTERED_AUDIT_ENTRIES = 200
+
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
@@ -526,5 +528,9 @@ async def process_document(file: UploadFile = File(...)) -> DocumentProcessingRe
 )
 def audit_log(
     use_case_id: Optional[str] = None,
+    limit: int = Query(MAX_UNFILTERED_AUDIT_ENTRIES, ge=1, le=5000),
 ) -> List[AuditEntry]:
-    return get_audit_log(use_case_id)
+    """One use case's full trail, or - with no `use_case_id` - the `limit`
+    most recent entries across all of them (an unbounded read would grow with
+    every run ever made)."""
+    return get_audit_log(use_case_id, limit=None if use_case_id else limit)

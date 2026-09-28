@@ -17,7 +17,7 @@ from app import config, db as db_module
 
 class InMemoryDB:
     """In-memory stand-in for app.db. Understands just enough PostgREST
-    query syntax (eq. filters, order=col.asc/desc) for the platform's own
+    query syntax (eq. filters, order=col.asc/desc, limit) for the platform's own
     query patterns."""
 
     def __init__(self):
@@ -29,7 +29,7 @@ class InMemoryDB:
     @staticmethod
     def _matches(row: Dict[str, Any], params: Dict[str, Any]) -> bool:
         for key, value in params.items():
-            if key in ("select", "order"):
+            if key in ("select", "order", "limit"):
                 continue
             if isinstance(value, str) and value.startswith("eq."):
                 if str(row.get(key)) != value[len("eq."):]:
@@ -43,7 +43,8 @@ class InMemoryDB:
         if order:
             column, _, direction = order.partition(".")
             rows.sort(key=lambda r: r.get(column) or "", reverse=(direction == "desc"))
-        return rows
+        limit = params.get("limit")
+        return rows[: int(limit)] if limit else rows
 
     def insert(self, table: str, row: Dict[str, Any]) -> Dict[str, Any]:
         row_id = row.get("id")

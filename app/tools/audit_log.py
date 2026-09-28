@@ -39,11 +39,19 @@ def log_event(use_case_id: str, stage: str, actor: str, data: Optional[Dict[str,
     return entry
 
 
-def get_audit_log(use_case_id: Optional[str] = None) -> List[Dict[str, Any]]:
-    """Read audit entries, optionally filtered to a single use case."""
-    params: Dict[str, Any] = {"order": "created_at.asc"}
+def get_audit_log(use_case_id: Optional[str] = None, limit: Optional[int] = None) -> List[Dict[str, Any]]:
+    """Read audit entries, oldest first, optionally filtered to a single use
+    case. `limit` keeps only the `limit` most recent entries (still returned
+    oldest first); without it every matching entry is returned."""
+    params: Dict[str, Any] = {"order": "created_at.desc" if limit else "created_at.asc"}
     if use_case_id is not None:
         params["use_case_id"] = f"eq.{use_case_id}"
+    if limit:
+        params["limit"] = limit
+
+    rows = db.select(TABLE, params)
+    if limit:
+        rows.reverse()
 
     return [
         {
@@ -54,7 +62,7 @@ def get_audit_log(use_case_id: Optional[str] = None) -> List[Dict[str, Any]]:
             "timestamp": row["created_at"],
             "data": row.get("data") or {},
         }
-        for row in db.select(TABLE, params)
+        for row in rows
     ]
 
 

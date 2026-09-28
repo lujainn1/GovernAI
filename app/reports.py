@@ -21,6 +21,13 @@ from app.models import (
 USE_CASES_TABLE = "use_cases"
 REPORTS_TABLE = "governance_reports"
 
+# The list views never show a use case's `documentation` - it can be a whole
+# extracted PDF - so list queries leave it out instead of hauling it from the
+# database through the API to the browser. Detail lookups still return it.
+USE_CASE_LIST_COLUMNS = (
+    "id,name,description,owner,data_classification,deployment_context,autonomy_level"
+)
+
 
 def _report_row(report: GovernanceReport) -> dict:
     return {
@@ -107,7 +114,9 @@ def load_report(use_case_id: str) -> Optional[GovernanceReport]:
 
 
 def list_reports() -> List[GovernanceReport]:
-    use_cases_by_id = {row["id"]: row for row in db.select(USE_CASES_TABLE)}
+    use_cases_by_id = {
+        row["id"]: row for row in db.select(USE_CASES_TABLE, {"select": USE_CASE_LIST_COLUMNS})
+    }
     report_rows = db.select(REPORTS_TABLE, {"order": "created_at.asc"})
 
     reports = []

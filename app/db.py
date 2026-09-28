@@ -17,6 +17,16 @@ import httpx
 
 from app import config
 
+# One pooled client for every call: each request to Supabase would otherwise
+# open (and TLS-handshake) a brand-new connection, which dominates the cost of
+# the small queries this module makes. httpx.Client is safe to share across the
+# threads FastAPI runs sync routes on. The 5s httpx default read timeout is too
+# tight for the larger reads (reports, audit log, metrics windows).
+_client = httpx.Client(
+    timeout=httpx.Timeout(30.0, connect=10.0),
+    limits=httpx.Limits(max_keepalive_connections=20, keepalive_expiry=30.0),
+)
+
 
 class SupabaseNotConfiguredError(RuntimeError):
     """Raised when SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY are missing."""
@@ -43,14 +53,14 @@ def _url(table: str) -> str:
 def select(table: str, params: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
     """SELECT rows. `params` uses PostgREST query syntax, e.g.
     {"category": "eq.security", "order": "id.asc"}."""
-    response = httpx.get(_url(table), headers=_headers(), params={"select": "*", **(params or {})})
+    response = _client.get(_url(table), headers=_headers(), params={"select": "*", **(params or {})})
     response.raise_for_status()
     return response.json()
 
 
 def insert(table: str, row: Dict[str, Any]) -> Dict[str, Any]:
     """INSERT a single row. Raises ValueError on a primary-key/unique conflict."""
-    response = httpx.post(
+    response = _client.post(
         _url(table), headers=_headers({"Prefer": "return=representation"}), json=row
     )
     if response.status_code == 409:
@@ -63,7 +73,7 @@ def insert(table: str, row: Dict[str, Any]) -> Dict[str, Any]:
 def update(table: str, match: Dict[str, Any], values: Dict[str, Any]) -> List[Dict[str, Any]]:
     """UPDATE rows matching `match` (equality filters) with `values`."""
     params = {key: f"eq.{value}" for key, value in match.items()}
-    response = httpx.patch(
+    response = _client.patch(
         _url(table),
         headers=_headers({"Prefer": "return=representation"}),
         params=params,
@@ -75,7 +85,7 @@ def update(table: str, match: Dict[str, Any], values: Dict[str, Any]) -> List[Di
 
 def upsert(table: str, row: Dict[str, Any], on_conflict: str) -> Dict[str, Any]:
     """INSERT or, on a conflict on the `on_conflict` column(s), UPDATE the existing row."""
-    response = httpx.post(
+    response = _client.post(
         f"{_url(table)}?on_conflict={on_conflict}",
         headers=_headers({"Prefer": "resolution=merge-duplicates,return=representation"}),
         json=row,

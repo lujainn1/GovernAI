@@ -36,11 +36,68 @@ async function request(path, options = {}) {
 }
 
 /* =========================================================
+   LIST CACHE
+========================================================= */
+
+// Overview, Reports and the global search each load the same three lists, and
+// every page change used to fetch them all again. A list is reused for a short
+// time, and requests for one that is already loading share that request.
+// Anything that changes what the lists contain clears the cache first, so the
+// person's own actions always show up immediately.
+const LIST_CACHE_TTL_MS = 30_000
+const listCache = new Map() // path -> { at, data } | { inflight }
+
+export function clearApiCache() {
+  listCache.clear()
+}
+
+supabase.auth.onAuthStateChange((event) => {
+  if (event === 'SIGNED_OUT') clearApiCache()
+})
+
+function cachedList(path) {
+  const entry = listCache.get(path)
+
+  if (entry?.inflight) return entry.inflight
+  if (entry && Date.now() - entry.at < LIST_CACHE_TTL_MS) {
+    return Promise.resolve(entry.data)
+  }
+
+  const inflight = request(path).then(
+    (data) => {
+      // Only keep the result if nothing cleared the cache while it loaded.
+      if (listCache.get(path)?.inflight === inflight) {
+        listCache.set(path, { at: Date.now(), data })
+      }
+      return data
+    },
+    (err) => {
+      if (listCache.get(path)?.inflight === inflight) listCache.delete(path)
+      throw err
+    },
+  )
+  listCache.set(path, { inflight })
+  return inflight
+}
+
+// A write that changes what the lists contain.
+async function mutate(path, options) {
+  clearApiCache()
+  try {
+    return await request(path, options)
+  } finally {
+    // Clear again: a list requested while the write was running may have
+    // loaded the old state.
+    clearApiCache()
+  }
+}
+
+/* =========================================================
    GOVERNANCE REPORTS
 ========================================================= */
 
 export function listReports() {
-  return request('/use-cases')
+  return cachedList('/use-cases')
 }
 
 export function getReport(useCaseId) {
@@ -48,7 +105,7 @@ export function getReport(useCaseId) {
 }
 
 export function submitUseCase(payload) {
-  return request('/use-cases', {
+  return mutate('/use-cases', {
     method: 'POST',
     body: JSON.stringify(payload),
   })
@@ -60,7 +117,7 @@ export function submitUseCase(payload) {
 
 // Runs only the first agent; its output then waits for approve/reject.
 export function startPipelineRun(payload) {
-  return request('/pipeline-runs', {
+  return mutate('/pipeline-runs', {
     method: 'POST',
     body: JSON.stringify(payload),
   })
@@ -71,13 +128,13 @@ export function getPipelineRun(useCaseId) {
 }
 
 export function listPipelineRuns() {
-  return request('/pipeline-runs')
+  return cachedList('/pipeline-runs')
 }
 
 // `seq` is the step being decided, so a stale click can't approve a step the
 // person hasn't seen. Approving runs the next agent, which can take a while.
 export function decidePipelineStep(useCaseId, seq, { approved, notes }) {
-  return request(`/pipeline-runs/${useCaseId}/steps/${seq}/decision`, {
+  return mutate(`/pipeline-runs/${useCaseId}/steps/${seq}/decision`, {
     method: 'POST',
     body: JSON.stringify({ approved, notes }),
   })
@@ -116,7 +173,7 @@ export async function extractDocument(file) {
 // The approver is the signed-in user; the backend takes it from the auth
 // token, so it isn't sent here.
 export function approveUseCase(useCaseId, { approved, notes }) {
-  return request(`/use-cases/${useCaseId}/approve`, {
+  return mutate(`/use-cases/${useCaseId}/approve`, {
     method: 'POST',
     body: JSON.stringify({
       approved,
@@ -130,11 +187,11 @@ export function approveUseCase(useCaseId, { approved, notes }) {
 ========================================================= */
 
 export function listPolicies() {
-  return request('/policies')
+  return cachedList('/policies')
 }
 
 export function createPolicy(payload) {
-  return request('/policies', {
+  return mutate('/policies', {
     method: 'POST',
     body: JSON.stringify(payload),
   })

@@ -16,9 +16,13 @@ from app.models import (
     PipelineStep,
     utcnow_iso,
 )
-from app.reports import USE_CASES_TABLE, load_report
+from app.reports import USE_CASE_LIST_COLUMNS, USE_CASES_TABLE, load_report
 
 TABLE = "pipeline_runs"
+
+# `memory_context` (the recalled precedent) is only needed to resume a run, so
+# the list leaves it out.
+RUN_LIST_COLUMNS = "use_case_id,status,steps,created_at,updated_at"
 
 
 def _row(run: PipelineRun) -> dict:
@@ -67,14 +71,16 @@ def load_run(use_case_id: str) -> Optional[PipelineRun]:
 def list_runs(status: Optional[PipelineRunStatus] = None) -> List[PipelineRun]:
     """Runs, newest first, optionally only those with `status`. The reports
     of completed runs are not attached (they are in the reports list)."""
-    params = {"order": "created_at.desc"}
+    params = {"select": RUN_LIST_COLUMNS, "order": "created_at.desc"}
     if status is not None:
         params["status"] = f"eq.{status.value}"
     run_rows = db.select(TABLE, params)
     if not run_rows:
         return []
 
-    use_cases_by_id = {row["id"]: row for row in db.select(USE_CASES_TABLE)}
+    use_cases_by_id = {
+        row["id"]: row for row in db.select(USE_CASES_TABLE, {"select": USE_CASE_LIST_COLUMNS})
+    }
     return [
         _run_from_rows(use_cases_by_id[row["use_case_id"]], row)
         for row in run_rows

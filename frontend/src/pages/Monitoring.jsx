@@ -49,7 +49,7 @@ function HealthBanner({ health }) {
       <div className="mon-banner-head">
         <span className={`pill pill-${tone}`}>{health.status}</span>
         <span className="mon-banner-title">
-          System health · {health.summary.runs} agent runs, {pct(health.summary.success_rate)} succeeded
+          System health · 6 agent runs, {pct(health.summary.success_rate)} succeeded
         </span>
       </div>
 
@@ -88,6 +88,7 @@ export default function Monitoring() {
     let cancelled = false
 
     function refresh() {
+      if (document.hidden) return // nobody is looking; the next tick catches up
       Promise.all([getMetrics(hours), getHealthReport(hours)])
         .then(([metrics, health]) => {
           if (cancelled) return

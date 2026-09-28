@@ -9,6 +9,7 @@ without a database; `load_window` reads the rows for a time window.
 """
 import math
 import statistics
+import time
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, Iterable, List, Optional
@@ -20,6 +21,14 @@ from app import db
 MAX_ROWS = 1000
 
 DECISIONS = ("approve", "require_human_approval", "block")
+
+# The dashboard asks for /metrics and /metrics/health-report together and
+# polls both, and each needs the same window of rows (up to MAX_ROWS runs with
+# their tool-call traces). Reading that window once per WINDOW_CACHE_SECONDS,
+# instead of once per request, keeps the monitoring views from loading the
+# database; the numbers are at most that stale.
+WINDOW_CACHE_SECONDS = 30.0
+_window_cache: Dict[int, Any] = {}
 
 
 def parse_ts(value: Any) -> Optional[datetime]:
@@ -67,8 +76,30 @@ def window_bounds(hours: int, now: Optional[datetime] = None) -> Dict[str, Any]:
     return {"hours": hours, "since": (until - timedelta(hours=hours)).isoformat(), "until": until.isoformat()}
 
 
+def _now() -> float:
+    return time.monotonic()
+
+
+def clear_window_cache() -> None:
+    _window_cache.clear()
+
+
 def load_window(hours: int, now: Optional[datetime] = None) -> Dict[str, Any]:
-    """Agent runs and governance reports started/created inside the window."""
+    """Agent runs and governance reports started/created inside the window.
+    Recent reads are reused (see WINDOW_CACHE_SECONDS); an explicit `now`
+    always reads fresh, since it asks for one specific moment."""
+    if now is not None:
+        return _read_window(hours, now)
+
+    cached = _window_cache.get(hours)
+    if cached is not None and _now() - cached[0] < WINDOW_CACHE_SECONDS:
+        return cached[1]
+    data = _read_window(hours, now)
+    _window_cache[hours] = (_now(), data)
+    return data
+
+
+def _read_window(hours: int, now: Optional[datetime]) -> Dict[str, Any]:
     window = window_bounds(hours, now)
     since = parse_ts(window["since"])
 

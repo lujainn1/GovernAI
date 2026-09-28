@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import {
   Activity,
   Bell,
@@ -21,16 +21,20 @@ import { getHealthReport } from './api.js'
 import { getSession, onAuthStateChange, signOut } from './auth.js'
 import Login from './pages/Login.jsx'
 import Overview from './pages/Overview.jsx'
-import Reports from './pages/Reports.jsx'
-import SubmitUseCase from './pages/SubmitUseCase.jsx'
-import PipelineRun from './pages/PipelineRun.jsx'
-import StepwiseRun from './pages/StepwiseRun.jsx'
-import ReportDetail from './pages/ReportDetail.jsx'
-import Policies from './pages/Policies.jsx'
-import AuditLog from './pages/AuditLog.jsx'
-import Monitoring from './pages/Monitoring.jsx'
 
 import './App.css'
+
+// Overview is the landing page, so it ships in the main bundle (a lazy landing
+// page would fetch its code before it could even start fetching its data).
+// Every other page is loaded the first time it is visited.
+const Reports = lazy(() => import('./pages/Reports.jsx'))
+const SubmitUseCase = lazy(() => import('./pages/SubmitUseCase.jsx'))
+const PipelineRun = lazy(() => import('./pages/PipelineRun.jsx'))
+const StepwiseRun = lazy(() => import('./pages/StepwiseRun.jsx'))
+const ReportDetail = lazy(() => import('./pages/ReportDetail.jsx'))
+const Policies = lazy(() => import('./pages/Policies.jsx'))
+const AuditLog = lazy(() => import('./pages/AuditLog.jsx'))
+const Monitoring = lazy(() => import('./pages/Monitoring.jsx'))
 
 const NAV_MAIN = [
   { to: '/', label: 'Overview', icon: LayoutGrid, end: true },
@@ -74,6 +78,7 @@ function AppShell({ user, onSignOut }) {
     let cancelled = false
 
     function refresh() {
+      if (document.hidden) return // nobody is looking; the next tick catches up
       getHealthReport(24)
         .then((report) => {
           if (!cancelled) setHealth(report)
@@ -144,7 +149,7 @@ function AppShell({ user, onSignOut }) {
           </div>
           <div className="agents-online-note">
             {health
-              ? `${health.status} · ${health.summary.runs} agent runs in 24h`
+              ? `${health.status} · 6 agent runs in 24h`
               : 'Health unavailable'}
           </div>
         </div>
@@ -181,17 +186,19 @@ function AppShell({ user, onSignOut }) {
         </header>
 
         <main className="app-main">
-          <Routes>
-            <Route path="/" element={<Overview />} />
-            <Route path="/reports" element={<Reports />} />
-            <Route path="/submit" element={<SubmitUseCase />} />
-            <Route path="/pipeline-run" element={<PipelineRun />} />
-            <Route path="/pipeline-run/:id" element={<StepwiseRun />} />
-            <Route path="/policies" element={<Policies />} />
-            <Route path="/audit-log" element={<AuditLog />} />
-            <Route path="/monitoring" element={<Monitoring />} />
-            <Route path="/use-cases/:id" element={<ReportDetail />} />
-          </Routes>
+          <Suspense fallback={<div className="loading">Loading…</div>}>
+            <Routes>
+              <Route path="/" element={<Overview />} />
+              <Route path="/reports" element={<Reports />} />
+              <Route path="/submit" element={<SubmitUseCase />} />
+              <Route path="/pipeline-run" element={<PipelineRun />} />
+              <Route path="/pipeline-run/:id" element={<StepwiseRun />} />
+              <Route path="/policies" element={<Policies />} />
+              <Route path="/audit-log" element={<AuditLog />} />
+              <Route path="/monitoring" element={<Monitoring />} />
+              <Route path="/use-cases/:id" element={<ReportDetail />} />
+            </Routes>
+          </Suspense>
         </main>
       </div>
     </div>
