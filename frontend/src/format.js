@@ -66,3 +66,18 @@ export function daysSince(dateString) {
   if (Number.isNaN(then)) return 0
   return Math.max(0, Math.floor((Date.now() - then) / 86400000))
 }
+
+// Share of each governance decision plus the conic-gradient that draws it as
+// a donut. `counts` has the keys approve, require_human_approval and block.
+export function decisionMixFromCounts(counts) {
+  const total = Math.max(1, counts.approve + counts.require_human_approval + counts.block)
+  const approvePct = Math.round((counts.approve / total) * 100)
+  const humanPct = Math.round((counts.require_human_approval / total) * 100)
+  return {
+    counts,
+    total,
+    approvePct,
+    humanPct,
+    conic: `conic-gradient(var(--teal) 0 ${approvePct}%, var(--amber) ${approvePct}% ${approvePct + humanPct}%, var(--rose) ${approvePct + humanPct}% 100%)`,
+  }
+}

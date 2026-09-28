@@ -1,8 +1,11 @@
 """FastAPI application exposing the governance workflow over HTTP."""
 
+import logging
+import time
+from contextlib import asynccontextmanager
 from typing import List, Optional
 
-from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, UploadFile
+from fastapi import Depends, FastAPI, File, Form, HTTPException, Query, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from openai import AuthenticationError as OpenAIAuthenticationError, OpenAIError
@@ -25,6 +28,10 @@ from app.orchestrator import (
     InvalidApprovalStateError,
     UseCaseNotFoundError,
 )
+from app.observability.context import request_context
+from app.observability.health import health_for_window
+from app.observability.logging_config import configure_logging, emit
+from app.observability.metrics import metrics_for_window
 from app.reports import list_reports, load_report
 from app.tools.audit_log import get_audit_log
 from app.tools.document_extract import (
@@ -37,10 +44,20 @@ from app.tools.policy_repository import add_policy, get_policies
 from app.tools.risk_rules import add_risk_rule, get_risk_rules
 
 
+http_logger = logging.getLogger("governai.http")
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    configure_logging()
+    yield
+
+
 app = FastAPI(
     title="GovernAI",
     description="Multi-Agent AI Governance Platform",
     version="0.1.0",
+    lifespan=lifespan,
 )
 
 app.add_middleware(
@@ -48,6 +65,7 @@ app.add_middleware(
     allow_origins=CORS_ORIGINS,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["X-Request-ID"],
 )
 
 
@@ -81,6 +99,31 @@ async def openai_error_handler(request: Request, exc: OpenAIError) -> JSONRespon
     """Catch-all for other OpenAI failures (rate limits, timeouts, network
     errors, bad requests) that aren't the more specific auth case above."""
     return JSONResponse(status_code=502, content={"detail": f"OpenAI API request failed: {exc}"})
+
+
+@app.middleware("http")
+async def request_id_middleware(request: Request, call_next):
+    """Give every request an id (or adopt a well-formed X-Request-ID from the
+    caller), attach it to all log lines and agent runs it causes, echo it in
+    the response, and log one line per request."""
+    started = time.perf_counter()
+    with request_context(request.headers.get("x-request-id")) as request_id:
+        try:
+            response = await call_next(request)
+        except Exception:
+            emit(
+                http_logger, "http_request", logging.ERROR,
+                method=request.method, path=request.url.path, status=500,
+                duration_ms=round((time.perf_counter() - started) * 1000, 1),
+            )
+            raise
+        response.headers["X-Request-ID"] = request_id
+        emit(
+            http_logger, "http_request",
+            method=request.method, path=request.url.path, status=response.status_code,
+            duration_ms=round((time.perf_counter() - started) * 1000, 1),
+        )
+        return response
 
 
 class UseCaseSubmission(BaseModel):
@@ -306,6 +349,24 @@ def approve_use_case(
             status_code=409,
             detail=str(exc),
         ) from exc
+
+
+# =========================================================
+# OBSERVABILITY
+# =========================================================
+
+@app.get("/metrics", dependencies=[Depends(get_current_user)])
+def get_metrics(hours: int = Query(24, ge=1, le=720)) -> dict:
+    """Success rate, avg/P95 latency, per-tool usage and error rate, token
+    cost, and decision mix over the last `hours` hours of agent runs."""
+    return metrics_for_window(hours)
+
+
+@app.get("/metrics/health-report", dependencies=[Depends(get_current_user)])
+def get_health_report(hours: int = Query(24, ge=1, le=720)) -> dict:
+    """Overall HEALTHY/DEGRADED/CRITICAL status, classified failures, latency
+    anomalies (mean + 2 std), and recommended actions."""
+    return health_for_window(hours)
 
 
 # =========================================================

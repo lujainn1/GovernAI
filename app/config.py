@@ -47,6 +47,14 @@ MEMORY_TOP_K = int(os.environ.get("GOVERNAI_MEMORY_TOP_K", "3"))
 MEMORY_MIN_SIMILARITY = float(os.environ.get("GOVERNAI_MEMORY_MIN_SIMILARITY", "0.35"))
 EMBEDDING_MODEL = os.environ.get("GOVERNAI_EMBEDDING_MODEL", "text-embedding-3-small")
 
+# --- Observability --------------------------------------------------------------
+# LOG_FORMAT: "json" (one JSON object per line, for log aggregators) or "text".
+LOG_LEVEL = os.environ.get("GOVERNAI_LOG_LEVEL", "INFO").upper()
+LOG_FORMAT = os.environ.get("GOVERNAI_LOG_FORMAT", "json").lower()
+# Optional JSON object overriding the built-in model price table, in USD per
+# 1M tokens as [input, output], e.g. {"gpt-4o-mini": [0.15, 0.60]}.
+MODEL_PRICES_JSON = os.environ.get("GOVERNAI_MODEL_PRICES")
+
 # --- CORS -----------------------------------------------------------------
 # Comma-separated list of allowed browser origins for the frontend. Defaults
 # to the local Vite dev server so `python main.py` keeps working out of the

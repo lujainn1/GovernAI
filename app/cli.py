@@ -19,6 +19,8 @@ from app.orchestrator import (
     InvalidApprovalStateError,
     UseCaseNotFoundError,
 )
+from app.observability.context import request_context
+from app.observability.logging_config import configure_logging
 from app.reports import list_reports, load_report
 from app.tools.audit_log import get_audit_log
 
@@ -114,9 +116,11 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main() -> int:
+    configure_logging()  # structured logs go to stderr; reports stay on stdout
     parser = build_parser()
     args = parser.parse_args()
-    return args.func(args)
+    with request_context():  # one request id per command, on every log line and agent run
+        return args.func(args)
 
 
 if __name__ == "__main__":

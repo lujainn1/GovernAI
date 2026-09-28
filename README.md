@@ -205,6 +205,8 @@ app/
   db.py                   # thin Supabase/PostgREST client
   api.py                  # FastAPI app
   cli.py                   # command-line interface
+  evaluation/              # automated agent evaluation (cases, checks, runner, reports)
+  observability/           # request ids, structured logs, agent_runs, metrics, health report
 supabase/
   migrations/0001_init_schema.sql  # tables, RLS, triggers
   migrations/0002_agent_memory.sql # agent_memory table (long-term agent memory)
@@ -239,6 +241,9 @@ cp .env.example .env
    [`supabase/migrations/0002_agent_memory.sql`](supabase/migrations/0002_agent_memory.sql)
    for [agent memory](#agent-memory) (optional: without it the agents run
    without memory and the backend logs a warning).
+   For agent observability, also run
+   [`supabase/migrations/0003_agent_runs.sql`](supabase/migrations/0003_agent_runs.sql)
+   (`supabase db push` applies all migrations).
 2. In `.env`, set `SUPABASE_URL`, `SUPABASE_ANON_KEY` (Project Settings ->
    API), and `SUPABASE_SERVICE_ROLE_KEY` (same page — keep this one secret,
    backend-only).
@@ -377,6 +382,114 @@ docker run --rm -p 8000:8000 --env-file .env governai-backend
 curl http://localhost:8000/health          # -> {"status":"ok"}
 curl http://localhost:8000/policies        # -> 401 Missing bearer token
 ```
+
+## Agent evaluation
+
+`app/evaluation` measures whether the Risk → Policy → Decision pipeline
+behaves correctly, not just whether it runs. It follows one workflow:
+
+`pipeline run → trace → checks → diagnosis → one change → regression + holdout → release decision`
+
+**What is scored.** Only observable behavior — never hidden reasoning. Each
+run records the tools every agent called (with arguments and results), the
+structured outputs, the audit-log stages, latency, and tokens
+(`BaseAgent.last_trace`). Deterministic checks (`app/evaluation/checks.py`) then
+test, per case: risk level and decision are acceptable, a forbidden decision
+(e.g. approving a fully autonomous loan-denial agent) never happens, required
+policies are flagged, required policies were actually *retrieved*, cited policy
+IDs are grounded in tool results (no hallucinated IDs), the report status matches
+the decision, non-approvals carry conditions, the audit trail is complete, and
+the rationale contains what it must and avoids what it must not.
+
+**Cases.** `data/evaluation/datasets/agent_eval_cases.json` is the frozen suite
+(benign over-blocking, consequential decisions, sensitive data, missing context,
+prompt injection hidden in submitted documentation, and a policy-repository
+outage injected as a tool fault). Each has a category, difficulty, the risk it
+guards, and a `critical` flag; any critical failure blocks release. Do not edit
+expected behavior to fit a run. `agent_eval_holdout.json` is only for validating
+a change made after diagnosing the frozen suite.
+
+**Safety.** Live runs execute inside an in-memory sandbox seeded from
+`data/*.yaml`, so no evaluation submission is written to Supabase.
+
+```bash
+# Offline walkthrough of the whole workflow on deterministic fixtures (no API key)
+python -m app.evaluation demo
+
+# Real evaluation: needs OPENAI_API_KEY. --repeats exposes run-to-run inconsistency.
+python -m app.evaluation run --version baseline --repeats 3
+# ...read the failure matrix / diagnosis, change ONE thing (prompt, model, guardrail)...
+python -m app.evaluation run --version improved --model gpt-4o --repeats 3
+python -m app.evaluation run --version improved --model gpt-4o --suite holdout
+python -m app.evaluation compare baseline improved
+```
+
+Results are saved as `data/evaluation/results/agent_eval_<version>_<suite>.json`
+(full traces included). The release gate is in `checks.RELEASE_GATE`: ≥ 90% run
+pass rate, ≥ 90% stable-case rate (a case counts only if every repeat passes), and
+100% of critical runs. A PASS requires live runs for the baseline, the improved
+version, and the holdout; replay fixtures are constructed, not measured, so they
+can never authorize a release. A PASS supports a controlled pilot, not
+unrestricted production use.
+
+**Limits.** The content checks are transparent phrase and set tests, so they can
+produce false positives and negatives. Read stored rationales alongside scores,
+and use a human or a calibrated LLM judge for semantic quality. Retrieval quality
+of the RAG index is evaluated separately by `app/rag/rag_evaluation.py`.
+
+## Observability and monitoring
+
+Every agent run is traced, stored, and summarized so you can tell whether the
+platform is healthy and why it isn't. (`app/observability/`, the `Monitoring`
+page in the UI.)
+
+**Structured logging with a request id.** Logs are one JSON object per line
+(`GOVERNAI_LOG_FORMAT=text` for humans, `GOVERNAI_LOG_LEVEL` to tune). Each HTTP
+request gets an id, or adopts a well-formed `X-Request-ID` from the caller, and
+echoes it in the `X-Request-ID` response header. The id is on every log line
+that request causes, including the orchestrator, each agent run and each tool
+call, and is stored on the run, so one id follows a submission end to end. The
+CLI assigns one id per command. Logs carry tool names, timings and outcomes,
+never prompts, documentation or tool arguments.
+
+**Agent runs, linked to the audit log.** Each agent invocation is saved to the
+`agent_runs` table (`supabase/migrations/0003_agent_runs.sql`; apply it like
+0001): ordered steps (model and tool calls, each with latency), tool calls,
+prompt/completion tokens, estimated cost, and the error if it failed.
+`audit_log_id` points at the audit entry for the same stage. If an agent
+fails, the audit log gets a `<stage>_failed` entry and the failed run is
+recorded against it before the error propagates. A missing API key is traced
+too. Only truncated previews of tool arguments and outputs are stored, and
+recording is best-effort: if the insert fails, the pipeline carries on and logs
+a warning.
+
+**`GET /metrics?hours=24`** (1 to 720 hours): success rate, avg / P50 / P95 / max
+latency (nearest-rank percentiles), tokens, estimated cost (total, per run, per
+model), per-agent stats, per-tool calls, error rate and avg/P95 latency, and the
+decision mix from governance reports. Cost is an estimate from a built-in price
+table (override with `GOVERNAI_MODEL_PRICES`), not a bill.
+
+**`GET /metrics/health-report?hours=24`**: an overall `HEALTHY` / `DEGRADED` /
+`CRITICAL` status with the reasons behind it.
+
+| Status | When |
+|---|---|
+| `CRITICAL` | any run failed on configuration/credentials, or success rate < 70% |
+| `DEGRADED` | success rate < 90%, or 2+ runs hit provider or tool failures, or a tool's error rate is 10% or more |
+| `HEALTHY` | otherwise |
+
+Success-rate rules apply only with at least 5 runs, so one bad run can't flip
+the status. Failures are classified in a fixed severity order (`CONFIGURATION`,
+`PROVIDER_UNAVAILABLE`, `TOOL_FAILURE`, `OUTPUT_CONTRACT`, `LOOP_LIMIT`,
+`UNKNOWN`), the worst component is named, and the recommended actions come only
+from failures that actually occurred. Latency anomalies are runs and tool calls
+slower than mean + 2 standard deviations of successful calls in the same agent
+or tool (needs 5+ samples; the window is the baseline, so longer windows are
+steadier).
+
+Limits: metrics read at most the 1000 most recent rows per window and say so
+when truncated; there is no alerting, only the report and the page; and health
+reflects agent runs, not the database or the frontend.
 
 ## Tests
 

@@ -8,7 +8,8 @@ import {
 } from 'lucide-react'
 
 import { listPolicies, listReports } from '../api.js'
-import { daysSince, median, riskTone, timeAgo } from '../format.js'
+import DecisionDonut from '../components/DecisionDonut.jsx'
+import { daysSince, decisionMixFromCounts, median, riskTone, timeAgo } from '../format.js'
 
 const RANGES = [
   { key: '7d', label: '7d', days: 7 },
@@ -121,16 +122,7 @@ export default function Overview() {
       const d = r.decision?.decision
       if (counts[d] !== undefined) counts[d] += 1
     })
-    const total = Math.max(1, counts.approve + counts.require_human_approval + counts.block)
-    const approvePct = Math.round((counts.approve / total) * 100)
-    const humanPct = Math.round((counts.require_human_approval / total) * 100)
-    return {
-      counts,
-      total,
-      approvePct,
-      humanPct,
-      conic: `conic-gradient(var(--teal) 0 ${approvePct}%, var(--amber) ${approvePct}% ${approvePct + humanPct}%, var(--rose) ${approvePct + humanPct}% 100%)`,
-    }
+    return decisionMixFromCounts(counts)
   }, [scoped])
 
   const topPolicies = useMemo(() => {
@@ -271,29 +263,7 @@ export default function Overview() {
 
         <div className="ov-panel">
           <h2 style={{ marginBottom: 14 }}>Decision mix</h2>
-          <div className="decision-mix-row">
-            <div className="decision-donut" style={{ background: decisionMix.conic }}>
-              <div className="decision-donut-center">
-                <span className="decision-donut-pct">{decisionMix.approvePct}%</span>
-                <span className="decision-donut-label">auto-approved</span>
-              </div>
-            </div>
-            <div className="decision-legend">
-              <div>
-                <span className="legend-dot" style={{ background: 'var(--teal)' }} />
-                Approve <span className="legend-n">{decisionMix.counts.approve}</span>
-              </div>
-              <div>
-                <span className="legend-dot" style={{ background: 'var(--amber)' }} />
-                Human review{' '}
-                <span className="legend-n">{decisionMix.counts.require_human_approval}</span>
-              </div>
-              <div>
-                <span className="legend-dot" style={{ background: 'var(--rose)' }} />
-                Block <span className="legend-n">{decisionMix.counts.block}</span>
-              </div>
-            </div>
-          </div>
+          <DecisionDonut mix={decisionMix} />
 
           <div className="ov-divider" />
 

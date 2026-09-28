@@ -22,7 +22,9 @@ documentation:
 Each stage's output is written to the audit log, and the resulting
 GovernanceReport is persisted so it can be looked up or approved later.
 """
-from typing import Optional, Tuple
+import logging
+import time
+from typing import Any, Callable, Optional, Tuple, TypeVar
 
 from app import config
 from app.agents.decision_agent import DecisionAgent
@@ -50,8 +52,14 @@ from app.models import (
     RiskAssessmentResult,
     utcnow_iso,
 )
+from app.observability.logging_config import emit
+from app.observability.recorder import record_agent_run
 from app.reports import load_report, save_report, save_use_case
 from app.tools.audit_log import log_event
+
+logger = logging.getLogger("governai.orchestrator")
+
+StageResult = TypeVar("StageResult")
 
 
 class UseCaseNotFoundError(LookupError):
@@ -123,7 +131,32 @@ class GovernanceOrchestrator:
             self._review_agent = ReviewAgent(model=self._model)
         return self._review_agent
 
+    def _run_stage(
+        self, use_case: AIUseCase, stage: str, agent: Any, call: Callable[[], StageResult]
+    ) -> StageResult:
+        """Run one agent stage, write its audit entry, and record the agent's
+        execution trace linked to that entry. If the agent fails, the audit
+        log gets a `<stage>_failed` entry (and the failed run is recorded
+        against it) before the error propagates."""
+        try:
+            result = call()
+        except Exception as exc:
+            entry = log_event(
+                use_case.id,
+                f"{stage}_failed",
+                agent.name,
+                {"error_type": type(exc).__name__, "error": str(exc)[:500]},
+            )
+            record_agent_run(agent, stage=stage, use_case_id=use_case.id, audit_log_id=entry.id)
+            raise
+        entry = log_event(use_case.id, stage, agent.name, result.model_dump(mode="json"))
+        record_agent_run(agent, stage=stage, use_case_id=use_case.id, audit_log_id=entry.id)
+        return result
+
     def run(self, use_case: AIUseCase, created_by: Optional[str] = None) -> GovernanceReport:
+        started = time.perf_counter()
+        emit(logger, "pipeline_started", use_case_id=use_case.id)
+
         # Persist the use case first: audit_log.use_case_id foreign-keys to
         # use_cases, so a row must exist before the first log_event call.
         save_use_case(use_case, created_by=created_by)
@@ -131,22 +164,20 @@ class GovernanceOrchestrator:
 
         self._recall_similar_cases(use_case)
 
-        risk_result = self.risk_agent.assess(use_case)
-        log_event(
-            use_case.id, "risk_assessment", self.risk_agent.name, risk_result.model_dump(mode="json")
+        risk_result = self._run_stage(
+            use_case, "risk_assessment", self.risk_agent, lambda: self.risk_agent.assess(use_case)
         )
-
-        compliance_result = self.policy_agent.check(use_case, risk_result)
-        log_event(
-            use_case.id,
+        compliance_result = self._run_stage(
+            use_case,
             "policy_compliance",
-            self.policy_agent.name,
-            compliance_result.model_dump(mode="json"),
+            self.policy_agent,
+            lambda: self.policy_agent.check(use_case, risk_result),
         )
-
-        decision_result = self.decision_agent.decide(use_case, risk_result, compliance_result)
-        log_event(
-            use_case.id, "decision", self.decision_agent.name, decision_result.model_dump(mode="json")
+        decision_result = self._run_stage(
+            use_case,
+            "decision",
+            self.decision_agent,
+            lambda: self.decision_agent.decide(use_case, risk_result, compliance_result),
         )
 
         decision_result = self._review_and_revise(
@@ -170,6 +201,15 @@ class GovernanceOrchestrator:
         save_report(report)
         log_event(use_case.id, "report_finalized", "system", {"status": status.value})
         remember_case(report)
+        emit(
+            logger,
+            "pipeline_finished",
+            use_case_id=use_case.id,
+            decision=decision_result.decision.value,
+            status=status.value,
+            risk_level=risk_result.risk_level.value,
+            duration_ms=round((time.perf_counter() - started) * 1000, 1),
+        )
         return report
 
     def _recall_similar_cases(self, use_case: AIUseCase) -> None:
@@ -211,8 +251,10 @@ class GovernanceOrchestrator:
         `block` or `require_human_approval` needs no escalation: neither
         lets the use case go live without a person.
         """
-        review = self.review_agent.review(use_case, risk, compliance, decision)
-        log_event(use_case.id, "review", self.review_agent.name, review.model_dump(mode="json"))
+        review = self._run_stage(
+            use_case, "review", self.review_agent,
+            lambda: self.review_agent.review(use_case, risk, compliance, decision),
+        )
 
         revisions = 0
         while (
@@ -220,18 +262,15 @@ class GovernanceOrchestrator:
             and revisions < config.MAX_REVIEW_REVISIONS
         ):
             revisions += 1
-            decision = self.decision_agent.decide(
-                use_case, risk, compliance, previous_decision=decision, review=review
+            decision = self._run_stage(
+                use_case, "decision_revision", self.decision_agent,
+                lambda: self.decision_agent.decide(
+                    use_case, risk, compliance, previous_decision=decision, review=review
+                ),
             )
-            log_event(
-                use_case.id,
-                "decision_revision",
-                self.decision_agent.name,
-                decision.model_dump(mode="json"),
-            )
-            review = self.review_agent.review(use_case, risk, compliance, decision)
-            log_event(
-                use_case.id, "review", self.review_agent.name, review.model_dump(mode="json")
+            review = self._run_stage(
+                use_case, "review", self.review_agent,
+                lambda: self.review_agent.review(use_case, risk, compliance, decision),
             )
 
         if review.verdict == ReviewVerdict.NEEDS_REVISION and decision.decision == Decision.APPROVE:

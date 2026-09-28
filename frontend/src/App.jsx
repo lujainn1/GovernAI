@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import {
+  Activity,
   Bell,
   ChevronRight,
   Files,
@@ -16,6 +17,7 @@ import {
 import { NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 
 import GovernAILogo from './components/Logo.jsx'
+import { getHealthReport } from './api.js'
 import { getSession, onAuthStateChange, signOut } from './auth.js'
 import Login from './pages/Login.jsx'
 import Overview from './pages/Overview.jsx'
@@ -25,6 +27,7 @@ import PipelineRun from './pages/PipelineRun.jsx'
 import ReportDetail from './pages/ReportDetail.jsx'
 import Policies from './pages/Policies.jsx'
 import AuditLog from './pages/AuditLog.jsx'
+import Monitoring from './pages/Monitoring.jsx'
 
 import './App.css'
 
@@ -38,6 +41,7 @@ const NAV_MAIN = [
 const NAV_GOV = [
   { to: '/policies', label: 'Policies', icon: Scale },
   { to: '/audit-log', label: 'Audit log', icon: History },
+  { to: '/monitoring', label: 'Monitoring', icon: Activity },
 ]
 
 const TITLES = {
@@ -47,6 +51,7 @@ const TITLES = {
   '/pipeline-run': 'Pipeline run',
   '/policies': 'Policies',
   '/audit-log': 'Audit log',
+  '/monitoring': 'Monitoring',
 }
 
 function pageTitle(pathname) {
@@ -55,9 +60,26 @@ function pageTitle(pathname) {
   return 'GovernAI'
 }
 
+const HEALTH_TONE = { HEALTHY: 'tone-teal', DEGRADED: 'tone-amber', CRITICAL: 'tone-rose' }
+
 function AppShell({ user, onSignOut }) {
   const navigate = useNavigate()
   const location = useLocation()
+  const [health, setHealth] = useState(null)
+
+  useEffect(() => {
+    let cancelled = false
+    getHealthReport(24)
+      .then((report) => {
+        if (!cancelled) setHealth(report)
+      })
+      .catch(() => {
+        // the sidebar card falls back to "unavailable"
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   return (
     <div className="app-shell">
@@ -100,12 +122,20 @@ function AppShell({ user, onSignOut }) {
 
         <div className="sidebar-spacer" />
 
-        <div className="agents-online-card">
+        <div
+          className="agents-online-card"
+          style={{ cursor: 'pointer' }}
+          onClick={() => navigate('/monitoring')}
+        >
           <div className="agents-online-head">
-            <Zap size={13} className="tone-teal" />
-            Agents online
+            <Zap size={13} className={health ? HEALTH_TONE[health.status] : 'tone-faint'} />
+            System health
           </div>
-          <div className="agents-online-note">3 / 3 healthy · gpt-4o-mini via OpenAI</div>
+          <div className="agents-online-note">
+            {health
+              ? `${health.status} · ${health.summary.runs} agent runs in 24h`
+              : 'Health unavailable'}
+          </div>
         </div>
 
         <div className="sidebar-user-row">
@@ -151,6 +181,7 @@ function AppShell({ user, onSignOut }) {
             <Route path="/pipeline-run" element={<PipelineRun />} />
             <Route path="/policies" element={<Policies />} />
             <Route path="/audit-log" element={<AuditLog />} />
+            <Route path="/monitoring" element={<Monitoring />} />
             <Route path="/use-cases/:id" element={<ReportDetail />} />
           </Routes>
         </main>
