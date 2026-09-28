@@ -63,6 +63,7 @@ function pageTitle(pathname) {
 }
 
 const HEALTH_TONE = { HEALTHY: 'tone-teal', DEGRADED: 'tone-amber', CRITICAL: 'tone-rose' }
+const HEALTH_REFRESH_MS = 60_000
 
 function AppShell({ user, onSignOut }) {
   const navigate = useNavigate()
@@ -71,15 +72,23 @@ function AppShell({ user, onSignOut }) {
 
   useEffect(() => {
     let cancelled = false
-    getHealthReport(24)
-      .then((report) => {
-        if (!cancelled) setHealth(report)
-      })
-      .catch(() => {
-        // the sidebar card falls back to "unavailable"
-      })
+
+    function refresh() {
+      getHealthReport(24)
+        .then((report) => {
+          if (!cancelled) setHealth(report)
+        })
+        .catch(() => {
+          // keep the last good report; the card says "unavailable" until one
+          // loads, and the next tick retries
+        })
+    }
+
+    refresh()
+    const timer = setInterval(refresh, HEALTH_REFRESH_MS)
     return () => {
       cancelled = true
+      clearInterval(timer)
     }
   }, [])
 
