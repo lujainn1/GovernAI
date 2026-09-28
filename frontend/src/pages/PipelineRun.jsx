@@ -12,6 +12,8 @@ import {
 
 import { getAuditLog, submitUseCase } from '../api.js'
 import { pretty, timeAgo } from '../format.js'
+import PipelineRunsList from './PipelineRunsList.jsx'
+import StepwiseRun from './StepwiseRun.jsx'
 
 const AGENTS = [
   {
@@ -34,10 +36,23 @@ const AGENTS = [
   },
 ]
 
+function isHumanInTheLoop(payload) {
+  return (payload.autonomy_level || '').toLowerCase().replaceAll('_', '-') === 'human-in-the-loop'
+}
+
+// Submitting from the form lands here. A human-in-the-loop use case runs one
+// agent at a time with an approve/reject after each; every other use case runs
+// the whole pipeline in one go. With nothing submitted, it lists the runs.
 export default function PipelineRun() {
-  const location = useLocation()
+  const payload = useLocation().state?.payload
+
+  if (!payload) return <PipelineRunsList />
+  if (isHumanInTheLoop(payload)) return <StepwiseRun payload={payload} />
+  return <FullRun payload={payload} />
+}
+
+function FullRun({ payload }) {
   const navigate = useNavigate()
-  const payload = location.state?.payload
 
   const [step, setStep] = useState(0)
   const [report, setReport] = useState(null)
@@ -46,10 +61,6 @@ export default function PipelineRun() {
   const started = useRef(false)
 
   useEffect(() => {
-    if (!payload) {
-      navigate('/submit', { replace: true })
-      return
-    }
     if (started.current) return
     started.current = true
 

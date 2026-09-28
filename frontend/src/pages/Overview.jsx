@@ -7,8 +7,8 @@ import {
   Ban,
 } from 'lucide-react'
 
-import { listPolicies, listReports } from '../api.js'
-import { daysSince, median, riskTone, timeAgo } from '../format.js'
+import { listPipelineRuns, listPolicies, listReports } from '../api.js'
+import { daysSince, median, riskTone, runAsRow, timeAgo } from '../format.js'
 
 const RANGES = [
   { key: '7d', label: '7d', days: 7 },
@@ -26,6 +26,7 @@ const RISK_COLOR = {
 
 export default function Overview() {
   const [reports, setReports] = useState(null)
+  const [runs, setRuns] = useState([])
   const [policies, setPolicies] = useState([])
   const [error, setError] = useState(null)
   const [range, setRange] = useState('30d')
@@ -35,11 +36,16 @@ export default function Overview() {
   useEffect(() => {
     let cancelled = false
 
-    Promise.all([listReports(), listPolicies().catch(() => [])]).then(
-      ([reportData, policyData]) => {
+    Promise.all([
+      listReports(),
+      listPolicies().catch(() => []),
+      listPipelineRuns().catch(() => []),
+    ]).then(
+      ([reportData, policyData, runData]) => {
         if (cancelled) return
         setReports(reportData)
         setPolicies(policyData)
+        setRuns(runData)
       }
     ).catch((err) => {
       if (!cancelled) setError(err.message)
@@ -58,11 +64,29 @@ export default function Overview() {
     return reports.filter((r) => new Date(r.created_at).getTime() >= cutoff)
   }, [reports, rangeDays])
 
+  // What needs a person: reports awaiting the final decision, and step-by-step
+  // runs awaiting a step approval. Oldest first.
+  const pendingItems = useMemo(() => {
+    const awaitingReports = (reports || [])
+      .filter((r) => r.status === 'pending_human_approval')
+      .map((r) => ({
+        id: r.use_case.id,
+        use_case: r.use_case,
+        risk_assessment: r.risk_assessment,
+        created_at: r.created_at,
+        to: `/use-cases/${r.use_case.id}`,
+      }))
+    const awaitingRuns = runs
+      .filter((run) => run.status === 'awaiting_step_approval')
+      .map(runAsRow)
+    return [...awaitingReports, ...awaitingRuns].sort(
+      (a, b) => new Date(a.created_at) - new Date(b.created_at)
+    )
+  }, [reports, runs])
+
   const stats = useMemo(() => {
     const all = reports || []
-    const pending = all.filter(
-      (r) => r.status === 'pending_human_approval'
-    )
+    const pending = pendingItems
     const blocked = all.filter((r) => r.status === 'blocked')
     const oldestPending = pending.reduce((max, r) => {
       const d = daysSince(r.created_at)
@@ -86,7 +110,7 @@ export default function Overview() {
         : 0,
       medianScore: median(scores),
     }
-  }, [reports, scoped])
+  }, [reports, scoped, pendingItems])
 
   const riskBars = useMemo(() => {
     const counts = { low: 0, medium: 0, high: 0, critical: 0 }
@@ -147,11 +171,7 @@ export default function Overview() {
       .map(([id, n]) => ({ id, title: byId[id] || id, n }))
   }, [scoped, policies])
 
-  const pendingCards = useMemo(() => {
-    return (reports || [])
-      .filter((r) => r.status === 'pending_human_approval')
-      .slice(0, 3)
-  }, [reports])
+  const pendingCards = useMemo(() => pendingItems.slice(0, 3), [pendingItems])
 
   if (error) {
     return <div className="error-banner">{error}</div>
@@ -329,8 +349,8 @@ export default function Overview() {
             {pendingCards.map((r) => (
               <div
                 className="pending-card"
-                key={r.use_case.id}
-                onClick={() => navigate(`/use-cases/${r.use_case.id}`)}
+                key={r.id}
+                onClick={() => navigate(r.to)}
               >
                 <div className="pending-card-top">
                   <span className={`pill pill-${riskTone(r.risk_assessment?.risk_level)}`}>

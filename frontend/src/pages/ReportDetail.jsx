@@ -8,7 +8,10 @@ import {
   XCircle,
 } from 'lucide-react'
 
-import { approveUseCase, getAuditLog, getReport } from '../api.js'
+import { AGENT_META } from '../agentMeta.js'
+import StepStatus from '../components/StepStatus.jsx'
+import { approveUseCase, getAuditLog, getPipelineRun, getReport } from '../api.js'
+import { getSession } from '../auth.js'
 import { decisionTone, pretty, statusTone, timeAgo } from '../format.js'
 
 function Tags({ items, tone }) {
@@ -31,8 +34,9 @@ export default function ReportDetail() {
 
   const [report, setReport] = useState(null)
   const [audit, setAudit] = useState([])
+  const [stepRun, setStepRun] = useState(null)
   const [error, setError] = useState(null)
-  const [approver, setApprover] = useState('')
+  const [currentUser, setCurrentUser] = useState(null)
   const [notes, setNotes] = useState('')
   const [deciding, setDeciding] = useState(false)
 
@@ -43,23 +47,27 @@ export default function ReportDetail() {
     getAuditLog(id)
       .then(setAudit)
       .catch(() => setAudit([]))
+    // Only step-by-step runs have step approvals; a normal report is a 404 here.
+    getPipelineRun(id)
+      .then(setStepRun)
+      .catch(() => setStepRun(null))
   }
 
   useEffect(refresh, [id])
 
-  async function handleDecision(approved) {
-    if (!approver.trim()) {
-      setError('Enter an approver name/email before recording a decision.')
-      return
-    }
+  // The approver is whoever is signed in. This is shown for context only:
+  // the backend takes the identity from the auth token.
+  useEffect(() => {
+    getSession().then((session) => setCurrentUser(session?.user ?? null))
+  }, [])
 
+  async function handleDecision(approved) {
     setDeciding(true)
     setError(null)
 
     try {
       const updated = await approveUseCase(id, {
         approved,
-        approver,
         notes: notes || null,
       })
       setReport(updated)
@@ -229,17 +237,9 @@ export default function ReportDetail() {
             <div className="ov-panel decide-panel">
               <h2 style={{ marginBottom: 3 }}>Record human decision</h2>
               <p className="ov-empty-note" style={{ marginBottom: 13 }}>
-                Logged to the audit trail with your name.
+                Logged to the audit trail as{' '}
+                <strong>{currentUser?.email || 'you'}</strong>.
               </p>
-              <div className="field">
-                <label htmlFor="approver">Approver</label>
-                <input
-                  id="approver"
-                  value={approver}
-                  onChange={(e) => setApprover(e.target.value)}
-                  placeholder="you@example.com"
-                />
-              </div>
               <div className="field">
                 <label htmlFor="notes">Notes</label>
                 <textarea
@@ -288,6 +288,26 @@ export default function ReportDetail() {
                 <dt>Logged</dt>
                 <dd className="mono">audit_log.jsonl</dd>
               </dl>
+            </div>
+          )}
+
+          {stepRun && stepRun.steps.length > 0 && (
+            <div className="ov-panel">
+              <div className="ov-panel-head">
+                <h2>Step approvals</h2>
+              </div>
+              <div className="step-approvals">
+                {stepRun.steps.map((step) => (
+                  <div className="step-approval-row" key={step.seq}>
+                    <div className="step-approval-name">
+                      Step {step.seq} · {AGENT_META[step.agent]?.name || pretty(step.agent)}
+                      {step.revision > 0 && ` (revision ${step.revision})`}
+                    </div>
+                    <StepStatus step={step} />
+                    {step.notes && <div className="step-approval-notes">{step.notes}</div>}
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 

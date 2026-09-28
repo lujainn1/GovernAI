@@ -93,12 +93,34 @@ def build_deterministic_signals(baseline: Dict[str, Any], doc_analysis: Dict[str
     )
     sensitive_keywords = ", ".join(doc_analysis.get("sensitive_keywords_found") or []) or "none found"
 
+    category_lines = (
+        "\n".join(f"- {c['category']}: {c['weight']}" for c in baseline.get("category_breakdown") or [])
+        or "(no categories matched)"
+    )
+    judgment_lines = (
+        "\n".join(
+            f"- {r['id']} ({r['category']}): {r['condition']}"
+            for r in baseline.get("rules_requiring_judgment") or []
+        )
+        or "(none)"
+    )
+
     return f"""Deterministic Pre-Analysis (computed by the platform, not the model)
 ====================================================================
 Baseline keyword/weight risk score: {baseline.get("suggested_score")}/100 \
 (suggested level: {baseline.get("suggested_level")})
 Matched risk rules:
 {matched_lines}
+
+Score contribution by category (from the matched rules only - several rules \
+can fire on the same underlying fact, so a high total may be one risk \
+counted more than once rather than several distinct risks):
+{category_lines}
+
+Rules requiring contextual judgment (NOT reflected in the score above - they \
+have no trigger_keywords, so they were never scanned; check each one against \
+the use case yourself):
+{judgment_lines}
 
 Document scan - PII indicators present: {doc_analysis.get("contains_pii_indicators")}
 Sensitive-topic keywords found in documentation: {sensitive_keywords}

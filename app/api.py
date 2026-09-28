@@ -19,12 +19,16 @@ from app.models import (
     DocumentGovernanceReport,
     DocumentProcessingResult,
     GovernanceReport,
+    PipelineRun,
+    PipelineRunStatus,
 )
 from app.orchestrator import (
     GovernanceOrchestrator,
     InvalidApprovalStateError,
+    InvalidStepStateError,
     UseCaseNotFoundError,
 )
+from app.pipeline_runs import list_runs, load_run
 from app.reports import list_reports, load_report
 from app.tools.audit_log import get_audit_log
 from app.tools.document_extract import (
@@ -94,8 +98,17 @@ class UseCaseSubmission(BaseModel):
 
 
 class ApprovalRequest(BaseModel):
+    """The approver is not part of the request: it is always the signed-in
+    user making the call, so it can't be spoofed by the client."""
+
     approved: bool
-    approver: str
+    notes: Optional[str] = None
+
+
+class StepDecisionRequest(BaseModel):
+    """Same as ApprovalRequest: the approver is the signed-in user."""
+
+    approved: bool
     notes: Optional[str] = None
 
 
@@ -279,11 +292,11 @@ def get_report(
 @app.post(
     "/use-cases/{use_case_id}/approve",
     response_model=GovernanceReport,
-    dependencies=[Depends(get_current_user)],
 )
 def approve_use_case(
     use_case_id: str,
     payload: ApprovalRequest,
+    user: dict = Depends(get_current_user),
 ) -> GovernanceReport:
     orchestrator = GovernanceOrchestrator()
 
@@ -291,7 +304,7 @@ def approve_use_case(
         return orchestrator.apply_human_decision(
             use_case_id,
             approved=payload.approved,
-            approver=payload.approver,
+            approver=user.get("email") or user["id"],
             notes=payload.notes,
         )
 
@@ -306,6 +319,81 @@ def approve_use_case(
             status_code=409,
             detail=str(exc),
         ) from exc
+
+
+# =========================================================
+# STEP-BY-STEP PIPELINE RUNS (human approval after every agent)
+# =========================================================
+
+@app.post("/pipeline-runs", response_model=PipelineRun)
+def start_pipeline_run(
+    payload: UseCaseSubmission,
+    user: dict = Depends(get_current_user),
+) -> PipelineRun:
+    """Like POST /use-cases, but pauses after each agent: only the first
+    agent (Risk Assessment) runs, and its output waits for a person to
+    approve or reject it via POST /pipeline-runs/{id}/steps/{seq}/decision."""
+    use_case = AIUseCase(**payload.model_dump())
+
+    try:
+        return GovernanceOrchestrator().start_run(use_case, created_by=user.get("id"))
+    except ConfigurationError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+
+
+@app.get(
+    "/pipeline-runs",
+    response_model=List[PipelineRun],
+    dependencies=[Depends(get_current_user)],
+)
+def get_pipeline_runs(status: Optional[PipelineRunStatus] = None) -> List[PipelineRun]:
+    """Step-by-step runs, newest first (e.g. ?status=awaiting_step_approval
+    for the ones waiting on a person). A completed run's `report` is not
+    attached here; fetch the run itself or GET /use-cases/{id}."""
+    return list_runs(status)
+
+
+@app.get(
+    "/pipeline-runs/{use_case_id}",
+    response_model=PipelineRun,
+    dependencies=[Depends(get_current_user)],
+)
+def get_pipeline_run(use_case_id: str) -> PipelineRun:
+    run = load_run(use_case_id)
+
+    if run is None:
+        raise HTTPException(status_code=404, detail="Pipeline run not found")
+
+    return run
+
+
+@app.post(
+    "/pipeline-runs/{use_case_id}/steps/{seq}/decision",
+    response_model=PipelineRun,
+)
+def decide_pipeline_step(
+    use_case_id: str,
+    seq: int,
+    payload: StepDecisionRequest,
+    user: dict = Depends(get_current_user),
+) -> PipelineRun:
+    """Approve or reject step `seq` (the one awaiting a decision). Approving
+    runs the next agent - or, after the last step, produces the final
+    report; rejecting stops the run."""
+    try:
+        return GovernanceOrchestrator().decide_step(
+            use_case_id,
+            seq,
+            approved=payload.approved,
+            approver=user.get("email") or user["id"],
+            notes=payload.notes,
+        )
+    except UseCaseNotFoundError as exc:
+        raise HTTPException(status_code=404, detail="Pipeline run not found") from exc
+    except InvalidStepStateError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    except ConfigurationError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
 
 
 # =========================================================

@@ -111,6 +111,71 @@ suggestions) and, when a revision happened, a `decision_revision` entry; an
 the use case sits in `pending_human_approval` status until a human calls the
 approve/reject action, which is itself logged.
 
+A use case submitted with autonomy level `human-in-the-loop` always ends at
+that human step: an `approve` is escalated to `require_human_approval`
+(logged as a `human_in_the_loop_escalation` entry), and a `block` keeps its
+recommendation but is left in `pending_human_approval` so the person makes the
+final approve/reject call.
+
+## Step-by-step approval (human in the loop)
+
+`POST /use-cases` runs every agent in one request. For a human-in-the-loop
+use case the web app instead starts a **step-by-step run**
+(`POST /pipeline-runs`), where a person approves or rejects each agent's
+output before the next agent runs:
+
+```
+Risk Assessment -> approve? -> Policy Compliance -> approve? -> Decision
+  -> approve? -> Review -> approve? -> (Decision revision -> approve? ->
+  Review -> approve?)* -> report -> final human sign-off
+```
+
+- Each call runs at most one agent. The run is stored between requests in
+  the `pipeline_runs` table, so it can be left and resumed from the
+  **Pipeline runs** page.
+- A step is decided with `POST /pipeline-runs/{id}/steps/{seq}/decision`
+  (`{"approved": true, "notes": "..."}`). `seq` must be the step that is
+  awaiting a decision, so a double click or a stale tab gets a `409` instead
+  of approving a step nobody has seen. The approver is the signed-in user.
+- **Approve** runs the next agent; approving the last step (the review, once
+  it is done revising) finalizes the report exactly as a normal run does -
+  including the review escalation, coordination diagnosis and the final
+  human-in-the-loop sign-off described above.
+- **Reject** stops the run: no later agent runs and no report is produced.
+  The rejection stays in the run and the audit log.
+- If the next agent fails (a `502`), nothing is recorded and the step stays
+  pending, so approving it again simply retries.
+- The audit log gets the usual per-agent entries, plus a `step_approval`
+  entry for every verdict (who, which step, approved or not, notes).
+
+`POST /use-cases` is unchanged: it still runs the whole pipeline in one go,
+whatever the use case's autonomy level. Only the web app routes
+human-in-the-loop submissions to the step-by-step flow.
+
+## Coordination diagnostics
+
+Splitting the work across four agents opens the door to the coordination
+failures multi-agent systems are prone to: an agent contradicting the one
+before it, a revision loop where Decision and Review just talk past each
+other, or a single agent's own output disagreeing with itself. GovernAI
+diagnoses these deterministically - no extra LLM call, just structural
+checks (`app/tools/coordination_diagnostics.py`) run after every review/
+revise loop:
+
+- **Conflicting conclusions** - e.g. an `approve` for a non-compliant or
+  critical-risk use case, or a `block` for one that's low-risk and compliant.
+- **Inconsistent findings** - the Policy Compliance Agent lists the same
+  policy as both violated and satisfied.
+- **Redundant work** - duplicate risk factors from the Risk Agent, or the
+  Decision Agent re-submitting an identical decision after Review Agent
+  feedback instead of acting on it.
+- **Unresolved coordination** - the revision budget ran out with the
+  Review Agent still unsatisfied.
+
+Findings are informational only - they never change the decision or report
+status - and are written to the audit log as a `coordination_diagnosis`
+entry (only when at least one check fires) for a human reviewer to see.
+
 ## Agent memory
 
 Without memory, every submission is judged from scratch, so two near-identical
@@ -208,6 +273,7 @@ app/
 supabase/
   migrations/0001_init_schema.sql  # tables, RLS, triggers
   migrations/0002_agent_memory.sql # agent_memory table (long-term agent memory)
+  migrations/0004_pipeline_runs.sql # pipeline_runs table (step-by-step approval)
 scripts/
   seed_supabase.py       # one-time load of data/*.yaml into Supabase
 data/
@@ -238,7 +304,10 @@ cp .env.example .env
    (or `supabase db push` if you use the CLI), then
    [`supabase/migrations/0002_agent_memory.sql`](supabase/migrations/0002_agent_memory.sql)
    for [agent memory](#agent-memory) (optional: without it the agents run
-   without memory and the backend logs a warning).
+   without memory and the backend logs a warning), then
+   [`supabase/migrations/0004_pipeline_runs.sql`](supabase/migrations/0004_pipeline_runs.sql)
+   for [step-by-step approval](#step-by-step-approval-human-in-the-loop)
+   (required for `/pipeline-runs`; the rest of the API works without it).
 2. In `.env`, set `SUPABASE_URL`, `SUPABASE_ANON_KEY` (Project Settings ->
    API), and `SUPABASE_SERVICE_ROLE_KEY` (same page — keep this one secret,
    backend-only).
@@ -289,7 +358,11 @@ python main.py
 | POST | `/use-cases` | Submit a new AI use case; runs the full agent pipeline |
 | GET | `/use-cases` | List all governance reports |
 | GET | `/use-cases/{id}` | Fetch one report |
-| POST | `/use-cases/{id}/approve` | Record a human approve/reject decision |
+| POST | `/pipeline-runs` | Start a step-by-step run: runs the first agent, then waits for approve/reject |
+| GET | `/pipeline-runs` | List step-by-step runs (`?status=awaiting_step_approval`) |
+| GET | `/pipeline-runs/{id}` | Fetch one run with its steps (and the report once complete) |
+| POST | `/pipeline-runs/{id}/steps/{seq}/decision` | Approve/reject the step awaiting a decision, as the signed-in user |
+| POST | `/use-cases/{id}/approve` | Record a human approve/reject decision as the signed-in user |
 | GET | `/audit-log?use_case_id=...` | Read the audit trail |
 | GET | `/policies` | List the policy repository |
 | GET | `/risk-rules` | List the risk-scoring rules |

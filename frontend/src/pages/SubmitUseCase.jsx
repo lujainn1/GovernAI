@@ -352,7 +352,11 @@ export default function SubmitUseCase() {
               <Play size={14} />
               Submit for governance review
             </button>
-            <span className="submit-actions-note">≈ 30–90 seconds · 3 agents</span>
+            <span className="submit-actions-note">
+              {form.autonomy_level === 'human-in-the-loop'
+                ? 'Step by step · you approve each agent before the next runs'
+                : '≈ 30–90 seconds · 3 agents'}
+            </span>
           </div>
         </form>
 

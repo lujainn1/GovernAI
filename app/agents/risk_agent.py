@@ -45,6 +45,16 @@ with explicit keywords, so raise the score using your own judgment when the \
 description implies risk the keywords miss (e.g. a consequential decision \
 described without ever using the word "employment").
 
+That block also contains two things the baseline score cannot capture. The \
+"Rules requiring contextual judgment" section lists rules with no keywords \
+(e.g. cross-border data transfer): evaluate each one against this specific \
+use case and reflect it in your score and risk_factors if it applies, rather \
+than ignoring it because nothing was keyword-matched. The "Score contribution \
+by category" section shows where the baseline came from: use it to judge \
+whether a high total reflects several distinct risks or one underlying fact \
+counted by several overlapping rules, and say so in your rationale when it is \
+the latter.
+
 You can still call get_risk_rules to review the full rule set (including \
 rules with no keywords, which need contextual judgment, not pattern \
 matching), get_scoring_bands to see the exact score -> level thresholds, \
@@ -57,6 +67,14 @@ healthcare, legal rights), external/customer exposure, third-party \
 dependencies, system permissions (can it write/delete/transfer/execute), \
 and scale of deployment. Use the rule weights as guidance, not a rigid \
 formula - use judgment for factors the rules don't cover.
+
+If you notice a genuinely recurring risk pattern that no existing rule covers \
+(including the rules requiring contextual judgment), you may record it under \
+suggested_new_rules. Only propose something truly novel - never a reworded \
+existing rule or category. It is a note for a human governance reviewer, is \
+never applied automatically, and must not change the risk_score or risk_level \
+you assign to this use case. Leaving suggested_new_rules empty is the \
+expected outcome for most assessments.
 
 List concrete risk_factors (short phrases) that drove your assessment, and \
 give a clear rationale explaining the level you assigned. Your risk_score \

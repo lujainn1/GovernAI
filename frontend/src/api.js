@@ -55,6 +55,35 @@ export function submitUseCase(payload) {
 }
 
 /* =========================================================
+   STEP-BY-STEP PIPELINE RUNS (a person approves each agent)
+========================================================= */
+
+// Runs only the first agent; its output then waits for approve/reject.
+export function startPipelineRun(payload) {
+  return request('/pipeline-runs', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
+export function getPipelineRun(useCaseId) {
+  return request(`/pipeline-runs/${useCaseId}`)
+}
+
+export function listPipelineRuns() {
+  return request('/pipeline-runs')
+}
+
+// `seq` is the step being decided, so a stale click can't approve a step the
+// person hasn't seen. Approving runs the next agent, which can take a while.
+export function decidePipelineStep(useCaseId, seq, { approved, notes }) {
+  return request(`/pipeline-runs/${useCaseId}/steps/${seq}/decision`, {
+    method: 'POST',
+    body: JSON.stringify({ approved, notes }),
+  })
+}
+
+/* =========================================================
    DOCUMENTS
 ========================================================= */
 
@@ -84,15 +113,13 @@ export async function extractDocument(file) {
   return res.json()
 }
 
-export function approveUseCase(
-  useCaseId,
-  { approved, approver, notes }
-) {
+// The approver is the signed-in user; the backend takes it from the auth
+// token, so it isn't sent here.
+export function approveUseCase(useCaseId, { approved, notes }) {
   return request(`/use-cases/${useCaseId}/approve`, {
     method: 'POST',
     body: JSON.stringify({
       approved,
-      approver,
       notes,
     }),
   })

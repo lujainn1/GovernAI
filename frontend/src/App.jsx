@@ -9,12 +9,12 @@ import {
   Plus,
   PlusCircle,
   Scale,
-  Search,
   Workflow,
   Zap,
 } from 'lucide-react'
 import { NavLink, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
 
+import GlobalSearch from './components/GlobalSearch.jsx'
 import GovernAILogo from './components/Logo.jsx'
 import { getSession, onAuthStateChange, signOut } from './auth.js'
 import Login from './pages/Login.jsx'
@@ -22,6 +22,7 @@ import Overview from './pages/Overview.jsx'
 import Reports from './pages/Reports.jsx'
 import SubmitUseCase from './pages/SubmitUseCase.jsx'
 import PipelineRun from './pages/PipelineRun.jsx'
+import StepwiseRun from './pages/StepwiseRun.jsx'
 import ReportDetail from './pages/ReportDetail.jsx'
 import Policies from './pages/Policies.jsx'
 import AuditLog from './pages/AuditLog.jsx'
@@ -52,6 +53,7 @@ const TITLES = {
 function pageTitle(pathname) {
   if (TITLES[pathname]) return TITLES[pathname]
   if (pathname.startsWith('/use-cases/')) return 'Report detail'
+  if (pathname.startsWith('/pipeline-run/')) return 'Pipeline run'
   return 'GovernAI'
 }
 
@@ -128,11 +130,7 @@ function AppShell({ user, onSignOut }) {
             <span className="breadcrumb-current">{pageTitle(location.pathname)}</span>
           </div>
           <div className="topbar-spacer" />
-          <div className="topbar-search">
-            <Search size={14} />
-            <span>Search use cases, policies…</span>
-            <span className="topbar-kbd">⌘K</span>
-          </div>
+          <GlobalSearch />
           <div className="topbar-bell">
             <Bell size={15} />
             <span className="topbar-bell-dot" />
@@ -149,6 +147,7 @@ function AppShell({ user, onSignOut }) {
             <Route path="/reports" element={<Reports />} />
             <Route path="/submit" element={<SubmitUseCase />} />
             <Route path="/pipeline-run" element={<PipelineRun />} />
+            <Route path="/pipeline-run/:id" element={<StepwiseRun />} />
             <Route path="/policies" element={<Policies />} />
             <Route path="/audit-log" element={<AuditLog />} />
             <Route path="/use-cases/:id" element={<ReportDetail />} />

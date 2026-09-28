@@ -14,6 +14,7 @@ from app.models import (
     ReviewVerdict,
     RiskAssessmentResult,
     RiskLevel,
+    SuggestedRiskRule,
 )
 from app.orchestrator import (
     GovernanceOrchestrator,
@@ -90,6 +91,38 @@ def test_run_pipeline_require_human_approval(monkeypatch):
     ]
 
 
+def test_risk_rule_suggestion_round_trips_through_persistence(monkeypatch):
+    _patch_agents(
+        monkeypatch,
+        decision=Decision.APPROVE,
+        risk_level=RiskLevel.LOW,
+        compliance_status=ComplianceStatus.COMPLIANT,
+    )
+    suggestion = SuggestedRiskRule(
+        title="Synthetic voice cloning without consent",
+        category="biometric_synthesis",
+        condition="Generates a synthetic voice or likeness of a real person without consent",
+        suggested_weight=20,
+        rationale="No existing rule covers consent for synthetic likeness.",
+    )
+    risk_result = RiskAssessmentResult(
+        risk_level=RiskLevel.LOW,
+        risk_score=10,
+        risk_factors=["x"],
+        rationale="low risk",
+        suggested_new_rules=[suggestion],
+    )
+    monkeypatch.setattr(
+        "app.agents.risk_agent.RiskAssessmentAgent.assess", lambda self, use_case: risk_result
+    )
+    use_case = _use_case()
+
+    GovernanceOrchestrator().run(use_case)
+
+    reloaded = load_report(use_case.id)
+    assert reloaded.risk_assessment.suggested_new_rules == [suggestion]
+
+
 def test_run_pipeline_block(monkeypatch):
     _patch_agents(monkeypatch, decision=Decision.BLOCK)
     use_case = _use_case()
@@ -109,6 +142,59 @@ def test_run_pipeline_approve(monkeypatch):
 
     report = GovernanceOrchestrator().run(use_case)
     assert report.status == ReportStatus.COMPLETED
+
+
+def test_human_in_the_loop_approve_is_escalated_to_pending_human_approval(monkeypatch):
+    _patch_agents(
+        monkeypatch,
+        decision=Decision.APPROVE,
+        risk_level=RiskLevel.LOW,
+        compliance_status=ComplianceStatus.COMPLIANT,
+    )
+    use_case = _use_case(autonomy_level="human-in-the-loop")
+    orchestrator = GovernanceOrchestrator()
+
+    report = orchestrator.run(use_case)
+
+    assert report.status == ReportStatus.PENDING_HUMAN_APPROVAL
+    assert report.decision.decision == Decision.REQUIRE_HUMAN_APPROVAL
+    assert "human-in-the-loop" in report.decision.rationale
+    stages = [e["stage"] for e in get_audit_log(use_case.id)]
+    assert stages[-2:] == ["human_in_the_loop_escalation", "report_finalized"]
+
+    # The approve/reject step is now available.
+    decided = orchestrator.apply_human_decision(use_case.id, approved=True, approver="jane")
+    assert decided.status == ReportStatus.APPROVED_BY_HUMAN
+
+
+def test_human_in_the_loop_block_waits_for_a_human_and_keeps_the_recommendation(monkeypatch):
+    _patch_agents(monkeypatch, decision=Decision.BLOCK)
+    use_case = _use_case(autonomy_level="human-in-the-loop")
+    orchestrator = GovernanceOrchestrator()
+
+    report = orchestrator.run(use_case)
+
+    assert report.status == ReportStatus.PENDING_HUMAN_APPROVAL
+    assert report.decision.decision == Decision.BLOCK
+    assert "human_in_the_loop_escalation" not in [e["stage"] for e in get_audit_log(use_case.id)]
+
+    rejected = orchestrator.apply_human_decision(use_case.id, approved=False, approver="jane")
+    assert rejected.status == ReportStatus.REJECTED_BY_HUMAN
+
+
+@pytest.mark.parametrize("level", ["human-on-the-loop", "fully-autonomous", None])
+def test_other_autonomy_levels_still_auto_complete_an_approve(monkeypatch, level):
+    _patch_agents(
+        monkeypatch,
+        decision=Decision.APPROVE,
+        risk_level=RiskLevel.LOW,
+        compliance_status=ComplianceStatus.COMPLIANT,
+    )
+
+    report = GovernanceOrchestrator().run(_use_case(autonomy_level=level))
+
+    assert report.status == ReportStatus.COMPLETED
+    assert report.decision.decision == Decision.APPROVE
 
 
 def test_human_approval_flow(monkeypatch):
@@ -237,8 +323,16 @@ def test_unresolved_review_escalates_approve_to_human_approval(monkeypatch):
     assert "auto-escalated" in report.decision.rationale
     assert "still wrong" in report.decision.rationale
 
-    stages = [e["stage"] for e in get_audit_log(use_case.id)]
-    assert stages[-2:] == ["review_escalation", "report_finalized"]
+    entries = get_audit_log(use_case.id)
+    assert [e["stage"] for e in entries][-3:] == [
+        "review_escalation",
+        "coordination_diagnosis",
+        "report_finalized",
+    ]
+    diagnosis = next(e for e in entries if e["stage"] == "coordination_diagnosis")
+    codes = {issue["code"] for issue in diagnosis["data"]["issues"]}
+    assert "REDUNDANT_WORK" in codes  # the two scripted decisions are identical
+    assert "UNRESOLVED_COORDINATION" in codes  # still needs_revision when the budget ran out
 
 
 def test_unresolved_review_does_not_downgrade_a_block(monkeypatch):
@@ -254,7 +348,13 @@ def test_unresolved_review_does_not_downgrade_a_block(monkeypatch):
 
     assert report.decision.decision == Decision.BLOCK
     assert report.status == ReportStatus.BLOCKED
-    assert "review_escalation" not in [e["stage"] for e in get_audit_log(use_case.id)]
+    entries = get_audit_log(use_case.id)
+    assert "review_escalation" not in [e["stage"] for e in entries]
+    # No escalation needed to flag it, but the coordination failure itself
+    # (identical decision resubmitted, still unresolved) is still diagnosed.
+    diagnosis = next(e for e in entries if e["stage"] == "coordination_diagnosis")
+    codes = {issue["code"] for issue in diagnosis["data"]["issues"]}
+    assert codes == {"REDUNDANT_WORK", "UNRESOLVED_COORDINATION"}
 
 
 def test_zero_max_revisions_reviews_but_never_revises(monkeypatch):
@@ -285,6 +385,55 @@ def test_review_that_approves_first_time_leaves_decision_untouched(monkeypatch):
     assert len(review_calls) == 1
     assert report.decision == original
     assert report.status == ReportStatus.COMPLETED
+
+
+# =========================================================
+# Coordination diagnostics: deterministic checks logged alongside the
+# review loop (see app.tools.coordination_diagnostics)
+# =========================================================
+
+
+def test_conflicting_conclusion_is_diagnosed_and_logged(monkeypatch):
+    """The Decision Agent approving a non-compliant use case is exactly the
+    kind of cross-agent conflict the reviewer might miss but the
+    deterministic diagnosis catches every time."""
+    _patch_agents(
+        monkeypatch,
+        decision=Decision.APPROVE,
+        risk_level=RiskLevel.HIGH,
+        compliance_status=ComplianceStatus.NON_COMPLIANT,
+    )
+    # The reviewer signs off anyway (e.g. missed the conflict) so the
+    # pipeline reaches report_finalized without a revision loop.
+    monkeypatch.setattr(
+        "app.agents.review_agent.ReviewAgent.review",
+        lambda self, use_case, risk, compliance, decision: _approved_review(),
+    )
+    use_case = _use_case()
+
+    report = GovernanceOrchestrator().run(use_case)
+
+    assert report.status == ReportStatus.COMPLETED  # diagnostics never change the outcome
+    entries = get_audit_log(use_case.id)
+    diagnosis = next(e for e in entries if e["stage"] == "coordination_diagnosis")
+    assert diagnosis["actor"] == "system"
+    codes = [issue["code"] for issue in diagnosis["data"]["issues"]]
+    assert "CONFLICTING_CONCLUSIONS" in codes
+
+
+def test_no_coordination_issues_means_no_diagnosis_entry(monkeypatch):
+    _patch_agents(
+        monkeypatch,
+        decision=Decision.APPROVE,
+        risk_level=RiskLevel.LOW,
+        compliance_status=ComplianceStatus.COMPLIANT,
+    )
+    use_case = _use_case()
+
+    GovernanceOrchestrator().run(use_case)
+
+    stages = [e["stage"] for e in get_audit_log(use_case.id)]
+    assert "coordination_diagnosis" not in stages
 
 
 # =========================================================

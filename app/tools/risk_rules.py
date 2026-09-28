@@ -43,6 +43,15 @@ SCORING_BANDS = [
 ]
 
 
+# The legacy RISK-00x and newer R-01..R-35 rules label overlapping concepts
+# differently. Used only to merge those buckets in the baseline's
+# category_breakdown; never changes matching or the score.
+CATEGORY_ALIASES = {
+    "data": "data_sensitivity",
+    "third_party_dependency": "third_party",
+}
+
+
 def _flatten(row: Dict[str, Any]) -> Dict[str, Any]:
     metadata = row.pop("metadata", None) or {}
     return {**metadata, **row}
@@ -116,15 +125,29 @@ def get_baseline_risk_score(use_case_text: str) -> Dict[str, Any]:
     """
     lower = (use_case_text or "").lower()
     matched: List[Dict[str, Any]] = []
+    rules_requiring_judgment: List[Dict[str, Any]] = []
     total_weight = 0
 
     for rule in get_risk_rules():
         keywords = rule.get("trigger_keywords") or []
         weight = rule.get("weight") or 0
         if not keywords or not weight:
-            # Rules with no keywords (e.g. RISK-008's free-text condition)
-            # can't be scored deterministically - they need the agent's own
-            # contextual judgment, so they're intentionally left out here.
+            # Can't be scored deterministically (e.g. RISK-008's free-text
+            # condition). Listed separately - independent of the text - so
+            # the agent always sees it instead of only if it happens to call
+            # get_risk_rules.
+            rules_requiring_judgment.append(
+                {
+                    "id": rule.get("id"),
+                    "title": rule.get("title") or rule.get("description"),
+                    "category": rule.get("category"),
+                    "condition": (
+                        rule.get("condition")
+                        or rule.get("description")
+                        or "(no condition provided - review manually)"
+                    ),
+                }
+            )
             continue
         hits = [kw for kw in keywords if kw.lower() in lower]
         if hits:
@@ -139,15 +162,27 @@ def get_baseline_risk_score(use_case_text: str) -> Dict[str, Any]:
             )
             total_weight += weight
 
+    category_totals: Dict[str, int] = {}
+    for m in matched:
+        category = CATEGORY_ALIASES.get(m["category"], m["category"])
+        category_totals[category] = category_totals.get(category, 0) + m["weight"]
+    category_breakdown = sorted(
+        ({"category": c, "weight": w} for c, w in category_totals.items()),
+        key=lambda entry: entry["weight"],
+        reverse=True,
+    )
+
     suggested_score = min(total_weight, 100)
     return {
         "matched_rules": matched,
+        "category_breakdown": category_breakdown,
+        "rules_requiring_judgment": rules_requiring_judgment,
         "suggested_score": suggested_score,
         "suggested_level": score_to_level(suggested_score),
         "method": (
             "deterministic keyword/weight match over the risk_rules table; "
-            "rules without trigger_keywords are excluded and need "
-            "contextual judgment instead"
+            "rules without trigger_keywords are excluded from the score and "
+            "listed under rules_requiring_judgment instead"
         ),
     }
 

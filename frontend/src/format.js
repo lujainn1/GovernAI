@@ -29,6 +29,40 @@ export function statusTone(status) {
   return 'neutral'
 }
 
+// A step-by-step run has no report until its last step is approved. Until
+// then (or if a step was rejected) it is listed next to the reports as a row
+// with the same fields the report lists read, plus where it stands and where
+// clicking it should go. Completed runs are left out: they have a report.
+export function isUnfinishedRun(run) {
+  return run.status !== 'completed'
+}
+
+function latestStepOutput(run, agent) {
+  const step = [...run.steps].reverse().find((s) => s.agent === agent)
+  return step?.output
+}
+
+export function runAsRow(run) {
+  const rejectedStep = run.steps.find((s) => s.status === 'rejected')
+  const lastStep = run.steps[run.steps.length - 1]
+  const rejected = run.status === 'rejected'
+
+  return {
+    id: run.use_case.id,
+    use_case: run.use_case,
+    risk_assessment: latestStepOutput(run, 'risk_assessment'),
+    decision: latestStepOutput(run, 'decision'),
+    statusLabel: rejected
+      ? `Rejected at step ${rejectedStep?.seq}`
+      : `Step ${lastStep?.seq} awaiting approval`,
+    statusTone: rejected ? 'rose' : 'amber',
+    group: rejected ? 'Other' : 'Pending',
+    created_at: run.created_at,
+    updated_at: run.updated_at,
+    to: `/pipeline-run/${run.use_case.id}`,
+  }
+}
+
 export function timeAgo(dateString) {
   if (!dateString) return '—'
   const then = new Date(dateString).getTime()

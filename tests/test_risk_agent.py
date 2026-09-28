@@ -2,7 +2,7 @@ import json
 from types import SimpleNamespace
 
 from app.agents.risk_agent import RiskAssessmentAgent, _reconcile_with_bands, _use_case_corpus
-from app.models import AIUseCase, RiskAssessmentResult, RiskLevel
+from app.models import AIUseCase, RiskAssessmentResult, RiskLevel, SuggestedRiskRule
 from app.tools.risk_rules import get_baseline_risk_score
 
 # `fake_supabase` (tests/conftest.py, autouse) seeds the risk_rules table
@@ -45,8 +45,35 @@ def test_get_baseline_risk_score_matches_expected_rules():
 def test_get_baseline_risk_score_handles_empty_text():
     result = get_baseline_risk_score("")
     assert result["matched_rules"] == []
+    assert result["category_breakdown"] == []
     assert result["suggested_score"] == 0
     assert result["suggested_level"] == "low"
+    assert result["rules_requiring_judgment"]  # static, independent of the text
+
+
+def test_get_baseline_risk_score_always_surfaces_rules_requiring_judgment():
+    # RISK-008 has no trigger_keywords, so it can never be scored - but it must
+    # still reach the agent rather than being silently skipped.
+    result = get_baseline_risk_score("Internal meeting notes summarizer.")
+    by_id = {r["id"]: r for r in result["rules_requiring_judgment"]}
+    assert "RISK-008" in by_id
+    assert by_id["RISK-008"]["condition"]
+    assert "RISK-008" not in {m["id"] for m in result["matched_rules"]}
+
+
+def test_get_baseline_risk_score_category_breakdown_merges_alias_categories():
+    # "health" fires RISK-001 (data_sensitivity, 25) and R-02 (data, 20): the
+    # same underlying fact under two labels, merged into one bucket.
+    result = get_baseline_risk_score("This agent is fully autonomous and processes health data.")
+    breakdown = {b["category"]: b["weight"] for b in result["category_breakdown"]}
+
+    assert breakdown["data_sensitivity"] == 45
+    assert "data" not in breakdown
+    assert breakdown["autonomy"] == 25
+    weights = [b["weight"] for b in result["category_breakdown"]]
+    assert weights == sorted(weights, reverse=True)
+    # The breakdown is diagnostic only: it always accounts for the raw total.
+    assert sum(weights) == sum(m["weight"] for m in result["matched_rules"])
 
 
 def test_get_baseline_risk_score_caps_at_100():
@@ -147,6 +174,9 @@ def test_assess_injects_deterministic_signals_and_reconciles_result(monkeypatch)
     assert "Deterministic Pre-Analysis" in user_message
     assert "Baseline keyword/weight risk score" in user_message
     assert "PII indicators present" in user_message
+    assert "Score contribution by category" in user_message
+    assert "Rules requiring contextual judgment" in user_message
+    assert "RISK-008" in user_message
 
 
 def test_assess_still_supports_the_model_calling_tools(monkeypatch):
@@ -176,3 +206,51 @@ def test_assess_still_supports_the_model_calling_tools(monkeypatch):
     assert len(fake_client.calls) == 2
     tool_messages = [m for m in fake_client.calls[1]["messages"] if m.get("role") == "tool"]
     assert tool_messages  # the model's get_scoring_bands call was answered
+
+
+def test_assess_passes_through_suggested_new_rules_without_affecting_score(monkeypatch):
+    final = json.dumps(
+        {
+            "risk_level": "low",
+            "risk_score": 10,
+            "risk_factors": ["minimal risk"],
+            "rationale": "internal tool, no sensitive data",
+            "suggested_new_rules": [
+                {
+                    "title": "Synthetic voice cloning without consent",
+                    "category": "biometric_synthesis",
+                    "condition": "Generates a synthetic voice or likeness of a real person "
+                    "without documented consent",
+                    "suggested_weight": 20,
+                    "rationale": "No existing rule covers consent for synthetic likeness.",
+                }
+            ],
+        }
+    )
+    fake_client = FakeClient([_completion(content=final)])
+    monkeypatch.setattr("app.agents.base.get_client", lambda: fake_client)
+
+    result = RiskAssessmentAgent().assess(_use_case())
+
+    assert result.risk_score == 10
+    assert result.risk_level == RiskLevel.LOW
+    (suggestion,) = result.suggested_new_rules
+    assert isinstance(suggestion, SuggestedRiskRule)
+    assert suggestion.suggested_weight == 20
+
+
+def test_assess_still_validates_when_model_omits_suggested_new_rules(monkeypatch):
+    final = json.dumps(
+        {
+            "risk_level": "low",
+            "risk_score": 5,
+            "risk_factors": ["minimal risk"],
+            "rationale": "nothing new to suggest",
+        }
+    )
+    fake_client = FakeClient([_completion(content=final)])
+    monkeypatch.setattr("app.agents.base.get_client", lambda: fake_client)
+
+    result = RiskAssessmentAgent().assess(_use_case())
+
+    assert result.suggested_new_rules == []
