@@ -313,6 +313,10 @@ cp .env.example .env
    [`supabase/migrations/0004_pipeline_runs.sql`](supabase/migrations/0004_pipeline_runs.sql)
    for [step-by-step approval](#step-by-step-approval-human-in-the-loop)
    (required for `/pipeline-runs`; the rest of the API works without it).
+   Finally run
+   [`supabase/migrations/0005_risk_rule_suggestions.sql`](supabase/migrations/0005_risk_rule_suggestions.sql)
+   (**required**: saving a report writes its `risk_suggested_new_rules`
+   column, so without it every report save fails).
    (`supabase db push` applies all migrations.)
 2. In `.env`, set `SUPABASE_URL`, `SUPABASE_ANON_KEY` (Project Settings ->
    API), and `SUPABASE_SERVICE_ROLE_KEY` (same page — keep this one secret,

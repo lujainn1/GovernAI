@@ -215,9 +215,13 @@ def test_scenario_4a_scanned_pdf_real_environment():
     checks = {
         "file_type == pdf": result.file_type == "pdf",
         "page_count == 1": result.page_count == 1,
-        "pypdf text layer is empty (genuinely image-only)": result.word_count == 0
-        or not ocr_available,
-        "warnings explain missing text": bool(result.warnings),
+        # The PDF is genuinely image-only: text only comes back if OCR ran.
+        "text recovered via OCR when available, none otherwise": (
+            (result.ocr_used and result.word_count > 0)
+            if ocr_available
+            else (not result.ocr_used and result.word_count == 0)
+        ),
+        "warnings explain how the text was (or was not) obtained": bool(result.warnings),
     }
     passed = all(checks.values())
     failed = [k for k, v in checks.items() if not v]
