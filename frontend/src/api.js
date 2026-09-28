@@ -129,6 +129,18 @@ export function createRiskRule(payload) {
 }
 
 /* =========================================================
+   MONITORING
+========================================================= */
+
+export function getMetrics(hours = 24) {
+  return request(`/metrics?hours=${hours}`)
+}
+
+export function getHealthReport(hours = 24) {
+  return request(`/metrics/health-report?hours=${hours}`)
+}
+
+/* =========================================================
    AUDIT LOG
 ========================================================= */
 
