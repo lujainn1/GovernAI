@@ -82,10 +82,12 @@ def test_submit_and_fetch_and_approve_flow(monkeypatch):
 
     approve_resp = client.post(
         f"/use-cases/{use_case_id}/approve",
-        json={"approved": True, "approver": "jane@example.com"},
+        json={"approved": True},
     )
     assert approve_resp.status_code == 200
     assert approve_resp.json()["status"] == "approved_by_human"
+    # The approver is the signed-in user (see conftest.bypass_auth).
+    assert approve_resp.json()["human_approval"]["approver"] == "test@example.com"
 
     audit_resp = client.get("/audit-log", params={"use_case_id": use_case_id})
     assert audit_resp.status_code == 200
@@ -136,10 +138,25 @@ def test_get_missing_use_case_404():
     assert resp.status_code == 404
 
 
-def test_approve_missing_use_case_404():
+def test_approve_ignores_a_client_supplied_approver(monkeypatch):
+    """The approver comes from the auth token, so a client can't record a
+    decision under someone else's name."""
+    _patch_agents(monkeypatch, decision=Decision.REQUIRE_HUMAN_APPROVAL)
+    report = client.post(
+        "/use-cases", json={"name": "Test", "description": "desc", "owner": "team"}
+    ).json()
+
     resp = client.post(
-        "/use-cases/does-not-exist/approve", json={"approved": True, "approver": "jane"}
+        f"/use-cases/{report['use_case']['id']}/approve",
+        json={"approved": False, "approver": "someone-else@example.com"},
     )
+
+    assert resp.status_code == 200
+    assert resp.json()["human_approval"]["approver"] == "test@example.com"
+
+
+def test_approve_missing_use_case_404():
+    resp = client.post("/use-cases/does-not-exist/approve", json={"approved": True})
     assert resp.status_code == 404
 
 

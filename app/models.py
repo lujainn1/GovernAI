@@ -56,11 +56,24 @@ class AIUseCase(BaseModel):
     documentation: Optional[str] = None  # free-text excerpt of design docs / DPIA / etc.
 
 
+class SuggestedRiskRule(BaseModel):
+    """A candidate risk-scoring rule proposed by the Risk Assessment Agent for
+    human governance review. Never auto-applied to the risk_rules table and
+    never allowed to influence the score of the assessment that produced it."""
+
+    title: str
+    category: str
+    condition: str  # plain-language description of what should trigger the rule
+    suggested_weight: Optional[int] = Field(default=None, ge=1, le=25)  # None = qualitative
+    rationale: str  # why no existing rule covers this
+
+
 class RiskAssessmentResult(BaseModel):
     risk_level: RiskLevel
     risk_score: int = Field(ge=0, le=100)
     risk_factors: List[str] = Field(default_factory=list)
     rationale: str
+    suggested_new_rules: List[SuggestedRiskRule] = Field(default_factory=list)
 
 
 class PolicyComplianceResult(BaseModel):
@@ -105,6 +118,59 @@ class GovernanceReport(BaseModel):
     created_at: str = Field(default_factory=utcnow_iso)
     updated_at: str = Field(default_factory=utcnow_iso)
     human_approval: Optional[HumanApproval] = None
+
+
+class PipelineAgent(str, Enum):
+    """The agents that produce a step a human approves or rejects. `decision`
+    and `review` can repeat (once per revision round)."""
+
+    RISK_ASSESSMENT = "risk_assessment"
+    POLICY_COMPLIANCE = "policy_compliance"
+    DECISION = "decision"
+    REVIEW = "review"
+
+
+class StepStatus(str, Enum):
+    PENDING = "pending"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+
+
+class PipelineRunStatus(str, Enum):
+    AWAITING_STEP_APPROVAL = "awaiting_step_approval"
+    COMPLETED = "completed"  # every step approved; the GovernanceReport exists
+    REJECTED = "rejected"  # a human rejected a step; the run stopped there
+
+
+class PipelineStep(BaseModel):
+    """One agent's output in a step-by-step run, plus the human verdict on
+    it. `seq` is 1-based and identifies the step to approve or reject, so a
+    stale click can never approve a step the person hasn't seen."""
+
+    seq: int
+    agent: PipelineAgent
+    revision: int = 0  # 0 = first pass; n = the nth revision round (decision/review only)
+    output: Dict[str, Any]  # the agent's result model, as JSON
+    status: StepStatus = StepStatus.PENDING
+    decided_by: Optional[str] = None
+    notes: Optional[str] = None
+    decided_at: Optional[str] = None
+    created_at: str = Field(default_factory=utcnow_iso)
+
+
+class PipelineRun(BaseModel):
+    """A governance run paused for human approval after every agent step.
+    `report` is only set once the run is completed."""
+
+    use_case: AIUseCase
+    status: PipelineRunStatus
+    steps: List[PipelineStep] = Field(default_factory=list)
+    report: Optional[GovernanceReport] = None
+    # Precedent recalled from long-term memory when the run started. Internal:
+    # persisted so later agents see what the first one did, never sent to clients.
+    memory_context: str = Field(default="", exclude=True)
+    created_at: str = Field(default_factory=utcnow_iso)
+    updated_at: str = Field(default_factory=utcnow_iso)
 
 
 class DocumentLanguage(str, Enum):

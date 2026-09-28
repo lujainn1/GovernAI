@@ -15,6 +15,7 @@ from app.models import (
     ReportStatus,
     RiskAssessmentResult,
     RiskLevel,
+    SuggestedRiskRule,
 )
 
 USE_CASES_TABLE = "use_cases"
@@ -28,6 +29,9 @@ def _report_row(report: GovernanceReport) -> dict:
         "risk_score": report.risk_assessment.risk_score,
         "risk_factors": report.risk_assessment.risk_factors,
         "risk_rationale": report.risk_assessment.rationale,
+        "risk_suggested_new_rules": [
+            r.model_dump(mode="json") for r in report.risk_assessment.suggested_new_rules
+        ],
         "compliance_status": report.policy_compliance.status.value,
         "violated_policies": report.policy_compliance.violated_policies,
         "satisfied_policies": report.policy_compliance.satisfied_policies,
@@ -52,6 +56,9 @@ def _report_from_rows(use_case_row: dict, report_row: dict) -> GovernanceReport:
             risk_score=report_row["risk_score"],
             risk_factors=report_row.get("risk_factors") or [],
             rationale=report_row["risk_rationale"],
+            suggested_new_rules=[
+                SuggestedRiskRule(**r) for r in (report_row.get("risk_suggested_new_rules") or [])
+            ],
         ),
         policy_compliance=PolicyComplianceResult(
             status=ComplianceStatus(report_row["compliance_status"]),

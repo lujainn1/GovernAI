@@ -2,8 +2,16 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ArrowDownUp, Download, Filter } from 'lucide-react'
 
-import { listReports } from '../api.js'
-import { decisionTone, pretty, riskTone, statusTone, timeAgo } from '../format.js'
+import { listPipelineRuns, listReports } from '../api.js'
+import {
+  decisionTone,
+  isUnfinishedRun,
+  pretty,
+  riskTone,
+  runAsRow,
+  statusTone,
+  timeAgo,
+} from '../format.js'
 
 function reportGroup(report) {
   if (report.status === 'blocked') return 'Blocked'
@@ -14,8 +22,23 @@ function reportGroup(report) {
   return 'Other'
 }
 
+function reportAsRow(report) {
+  return {
+    id: report.use_case.id,
+    use_case: report.use_case,
+    risk_assessment: report.risk_assessment,
+    decision: report.decision,
+    statusLabel: pretty(report.status),
+    statusTone: statusTone(report.status),
+    group: reportGroup(report),
+    updated_at: report.updated_at,
+    to: `/use-cases/${report.use_case.id}`,
+  }
+}
+
 export default function Reports() {
-  const [reports, setReports] = useState(null)
+  // Reports and unfinished step-by-step runs, as one list of rows.
+  const [entries, setEntries] = useState(null)
   const [error, setError] = useState(null)
   const [sortAsc, setSortAsc] = useState(false)
 
@@ -25,9 +48,14 @@ export default function Reports() {
 
   useEffect(() => {
     let cancelled = false
-    listReports()
-      .then((data) => {
-        if (!cancelled) setReports(data)
+    // A run's list failing (e.g. its migration isn't applied) must not hide the reports.
+    Promise.all([listReports(), listPipelineRuns().catch(() => [])])
+      .then(([reportData, runData]) => {
+        if (cancelled) return
+        setEntries([
+          ...reportData.map(reportAsRow),
+          ...runData.filter(isUnfinishedRun).map(runAsRow),
+        ])
       })
       .catch((err) => {
         if (!cancelled) setError(err.message)
@@ -38,31 +66,31 @@ export default function Reports() {
   }, [])
 
   const counts = useMemo(() => {
-    const all = reports || []
+    const all = entries || []
     return {
       All: all.length,
-      Pending: all.filter((r) => reportGroup(r) === 'Pending').length,
-      Blocked: all.filter((r) => reportGroup(r) === 'Blocked').length,
-      Approved: all.filter((r) => reportGroup(r) === 'Approved').length,
+      Pending: all.filter((r) => r.group === 'Pending').length,
+      Blocked: all.filter((r) => r.group === 'Blocked').length,
+      Approved: all.filter((r) => r.group === 'Approved').length,
     }
-  }, [reports])
+  }, [entries])
 
   const rows = useMemo(() => {
-    const all = reports || []
+    const all = entries || []
     const filtered =
-      filter === 'All' ? all : all.filter((r) => reportGroup(r) === filter)
+      filter === 'All' ? all : all.filter((r) => r.group === filter)
 
     return [...filtered].sort((a, b) => {
       const diff = new Date(a.updated_at) - new Date(b.updated_at)
       return sortAsc ? diff : -diff
     })
-  }, [reports, filter, sortAsc])
+  }, [entries, filter, sortAsc])
 
   if (error) {
     return <div className="error-banner">{error}</div>
   }
 
-  if (!reports) {
+  if (!entries) {
     return <div className="loading">Loading governance reports…</div>
   }
 
@@ -124,8 +152,8 @@ export default function Reports() {
           rows.map((r) => (
             <div
               className="reports-table-row"
-              key={r.use_case.id}
-              onClick={() => navigate(`/use-cases/${r.use_case.id}`)}
+              key={r.id}
+              onClick={() => navigate(r.to)}
             >
               <span className="reports-name">{r.use_case.name}</span>
               <span className="reports-owner">{r.use_case.owner}</span>
@@ -141,9 +169,7 @@ export default function Reports() {
                 </span>
               </span>
               <span>
-                <span className={`pill pill-${statusTone(r.status)}`}>
-                  {pretty(r.status)}
-                </span>
+                <span className={`pill pill-${r.statusTone}`}>{r.statusLabel}</span>
               </span>
               <span className="reports-updated">{timeAgo(r.updated_at)}</span>
             </div>
@@ -152,7 +178,7 @@ export default function Reports() {
 
         <div className="reports-table-foot">
           <span>
-            Showing {rows.length} of {reports.length} reports
+            Showing {rows.length} of {entries.length} reports
           </span>
         </div>
       </div>
