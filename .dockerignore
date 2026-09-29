@@ -12,6 +12,11 @@ scripts/
 supabase/
 examples/
 data/
+# ...except the accepted SDAIA FAISS index (~6 MB), which the Policy
+# Compliance Agent retrieves its evidence from at runtime. Without it in
+# the image, retrieval fails open and the agent runs with no SDAIA
+# passages. The 25 MB source PDFs under data/knowledge stay excluded.
+!data/vectorstore/sdaia_faiss/
 *.pdf
 *.ipynb
 .env

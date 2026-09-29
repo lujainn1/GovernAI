@@ -8,12 +8,11 @@ The embeddings are created through the OpenAI API, while the FAISS
 index is stored locally inside the GovernAI project.
 """
 
-from pathlib import Path
-
 from dotenv import load_dotenv
 from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores import FAISS
 
+from app import config
 from app.rag.chunker import create_chunks
 
 
@@ -21,8 +20,10 @@ from app.rag.chunker import create_chunks
 load_dotenv()
 
 
-# Directory where the FAISS vector store will be saved locally.
-VECTOR_STORE_DIR = Path("data/vectorstore/sdaia_faiss")
+# Directory where the FAISS vector store is saved and loaded from.
+# Resolved from app/config.py (BASE_DIR-relative), not from the working
+# directory, so retrieval works the same locally and inside the container.
+VECTOR_STORE_DIR = config.VECTOR_STORE_DIR
 
 
 # OpenAI embedding model used for semantic retrieval.

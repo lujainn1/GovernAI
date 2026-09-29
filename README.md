@@ -408,6 +408,21 @@ up to ~60s to wake on the next request). Vercel rewrites `/api/*` through to
 the Render-hosted backend, matching what `frontend/vite.config.js`'s dev
 proxy already does locally.
 
+**What goes into the image:** `app/`, `main.py`, and the accepted SDAIA
+FAISS index (`data/vectorstore/sdaia_faiss`, ~6 MB). The index is the one
+part of `data/` the backend reads at *runtime* — the Policy Compliance Agent
+retrieves its evidence from it — so [`.dockerignore`](.dockerignore)
+excludes `data/` and then re-includes that one directory. The rest of
+`data/` is build-time input (the 25 MB of source PDFs under
+`data/knowledge/`, the evaluation datasets, and the YAML seeds, which are
+loaded into Supabase by `scripts/seed_supabase.py`) and stays out.
+
+This matters because retrieval **fails open**: if the index is missing,
+`app/rag/evidence.py` logs a warning and the agents carry on with no SDAIA
+passages, so submissions still succeed while every Policy finding behind
+them is made without evidence. `tests/test_docker_packaging.py` checks the
+packaging so the index cannot fall out of the image unnoticed.
+
 Do this in order — the Vercel rewrite needs the real Render hostname, and
 the backend's CORS allow-list needs the real Vercel hostname, so each side
 is wired up only after the other exists.
@@ -459,6 +474,12 @@ the usual `401`, so add them first for a meaningful test.
 
 ```bash
 docker build -t governai-backend .
+
+# The SDAIA index has to be in the image, or the Policy Agent runs blind.
+docker run --rm governai-backend ls data/vectorstore/sdaia_faiss
+# -> index.faiss
+#    index.pkl
+
 docker run --rm -p 8000:8000 --env-file .env governai-backend
 curl http://localhost:8000/health          # -> {"status":"ok"}
 curl http://localhost:8000/policies        # -> 401 Missing bearer token

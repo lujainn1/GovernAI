@@ -32,6 +32,7 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
 
+from app import config
 from app.rag.dedupe import sentence_set, text_hash
 
 # --- defaults ---------------------------------------------------------------
@@ -142,7 +143,7 @@ def retrieve(
     # got worse on every diagnostic (duplicate slots 7.8% -> 17.8%, low-info
     # slots 13.3% -> 36.7%, distinct documents 1.83 -> 1.33) and one query lost
     # its source from the top 5 altogether.
-    index_dir: str = "data/vectorstore/sdaia_faiss",
+    index_dir: str = str(config.VECTOR_STORE_DIR),
     fetch_multiplier: int = FETCH_MULTIPLIER,
     per_page_cap: int = PER_PAGE_CAP,
     mmr_lambda: float = MMR_LAMBDA,

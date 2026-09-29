@@ -20,6 +20,18 @@ DATA_DIR = Path(os.environ.get("GOVERNAI_DATA_DIR", BASE_DIR / "data"))
 POLICIES_FILE = DATA_DIR / "policies.yaml"
 RISK_RULES_FILE = DATA_DIR / "risk_rules.yaml"
 
+# The accepted SDAIA FAISS index the Policy Compliance Agent retrieves its
+# evidence from (built by app/rag/vector_store.py). Unlike the YAML above this
+# IS needed at runtime, so the Dockerfile copies it into the image and
+# .dockerignore re-includes it - everything else under data/ stays out.
+# Derived from BASE_DIR rather than the process's working directory so the
+# index is found however the app is started.
+VECTOR_STORE_DIR = Path(
+    os.environ.get(
+        "GOVERNAI_VECTOR_STORE_DIR", DATA_DIR / "vectorstore" / "sdaia_faiss"
+    )
+)
+
 # --- OpenAI (LLM provider) --------------------------------------------------
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")

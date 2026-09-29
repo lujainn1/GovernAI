@@ -16,12 +16,12 @@ cleaning and de-duplication rather than to a different representation.
     python -m app.rag.index_v2
 """
 
-from pathlib import Path
 from typing import Dict, List, Tuple
 
 from dotenv import load_dotenv
 from langchain_community.vectorstores import FAISS
 
+from app import config
 from app.rag.chunker import merge_small_chunks, text_splitter
 from app.rag.dedupe import deduplicate
 from app.rag.document_loader import load_all_sdaia_pdfs
@@ -30,7 +30,7 @@ from app.rag.vector_store import EMBEDDING_MODEL, get_embeddings
 
 load_dotenv()
 
-VECTOR_STORE_V2_DIR = Path("data/vectorstore/sdaia_faiss_v2")
+VECTOR_STORE_V2_DIR = config.VECTOR_STORE_DIR.with_name("sdaia_faiss_v2")
 
 
 def build_chunks_v2() -> Tuple[List[dict], Dict[str, object]]:
