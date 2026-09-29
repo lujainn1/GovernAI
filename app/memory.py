@@ -35,7 +35,7 @@ from app import config, db
 from app.llm_client import get_client
 from app.models import AIUseCase, GovernanceReport
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("governai.memory")
 
 TABLE = "agent_memory"
 

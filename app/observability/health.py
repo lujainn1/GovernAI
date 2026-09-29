@@ -50,6 +50,14 @@ CATEGORIES: Tuple[Tuple[str, str, str, str], ...] = (
         "Check OpenAI status and quota; add retry with backoff, or fail over to another model.",
     ),
     (
+        "CONTEXT_LIMIT",
+        "high",
+        "The conversation sent to the model exceeded its context window",
+        "Look at tool_calls on the failed runs: an agent that fetches the whole policy "
+        "repository repeatedly grows the message history until the next request is rejected. "
+        "Narrow those lookups (get_policies takes a category), or bound the history.",
+    ),
+    (
         "TOOL_FAILURE",
         "high",
         "Agent tools (policy repository, risk rules, document analysis) returning errors",
@@ -86,6 +94,15 @@ _PROVIDER_TYPES = {
     "APIStatusError", "TimeoutError", "ConnectTimeout", "ReadTimeout", "ConnectError",
 }
 _PROVIDER_TEXT = ("rate limit", "timed out", "timeout", "connection error", "overloaded", "503", "502")
+# A context-window overflow arrives as a plain BadRequestError, which would
+# otherwise land in UNKNOWN. It is not a provider outage and no retry fixes
+# it: the request the platform built was too big, so it gets its own category
+# with the action that actually resolves it.
+_CONTEXT_LIMIT_TEXT = (
+    "maximum context length",
+    "context_length_exceeded",
+    "reduce the length of the messages",
+)
 _TOOL_ERROR_TEXT = re.compile(r'"error":\s*"([^"]{1,120})')
 
 
@@ -97,6 +114,8 @@ def classify_run_error(error_type: Optional[str], message: Optional[str]) -> str
         return "CONFIGURATION"
     if "exceeded max_tool_iterations" in text:
         return "LOOP_LIMIT"
+    if any(fragment in text for fragment in _CONTEXT_LIMIT_TEXT):
+        return "CONTEXT_LIMIT"
     if kind in _PROVIDER_TYPES or any(fragment in text for fragment in _PROVIDER_TEXT):
         return "PROVIDER_UNAVAILABLE"
     if kind in {"AgentError", "ValidationError", "JSONDecodeError"}:

@@ -83,12 +83,18 @@ def test_agent_parses_json_wrapped_in_markdown_fence(monkeypatch):
 
 
 def test_agent_raises_on_invalid_final_json(monkeypatch):
-    fake_client = FakeClient([_completion(content="not json at all")])
+    # The agent asks once for a correction (see BaseAgent._run_loop), so output
+    # that is still unusable after that retry is the real failure.
+    fake_client = FakeClient(
+        [_completion(content="not json at all"), _completion(content="still not json")]
+    )
     monkeypatch.setattr("app.agents.base.get_client", lambda: fake_client)
 
     agent = BaseAgent(system_prompt="test agent")
     with pytest.raises(AgentError):
         agent.run("go", EchoResult)
+
+    assert len(fake_client.calls) == 2
 
 
 def test_agent_raises_after_max_tool_iterations(monkeypatch):

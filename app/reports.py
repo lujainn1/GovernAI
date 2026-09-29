@@ -3,6 +3,8 @@ Supabase `use_cases` and `governance_reports` tables (one governance_reports
 row per use case, related by use_case_id)."""
 from typing import List, Optional
 
+import httpx
+
 from app import db
 from app.models import (
     AIUseCase,
@@ -102,7 +104,16 @@ def save_report(report: GovernanceReport) -> None:
 
 
 def load_report(use_case_id: str) -> Optional[GovernanceReport]:
-    use_case_rows = db.select(USE_CASES_TABLE, {"id": f"eq.{use_case_id}"})
+    try:
+        use_case_rows = db.select(USE_CASES_TABLE, {"id": f"eq.{use_case_id}"})
+    except httpx.HTTPStatusError as exc:
+        # An id that is not a UUID cannot match any row; PostgREST reports
+        # that as a 400 rather than an empty result. That is a bad request
+        # from the caller, not a database failure, so it must read as "no
+        # such use case" and reach the route's 404 instead of a 500.
+        if db.is_invalid_value_error(exc):
+            return None
+        raise
     if not use_case_rows:
         return None
 

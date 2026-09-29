@@ -10,7 +10,7 @@ import {
   getPipelineRun,
   startPipelineRun,
 } from '../api.js'
-import { decisionTone, pretty, riskTone, timeAgo } from '../format.js'
+import { complianceTone, decisionTone, pretty, riskTone, timeAgo } from '../format.js'
 
 const RUN_PILL = {
   awaiting_step_approval: { tone: 'amber', label: 'awaiting your approval' },
@@ -67,7 +67,7 @@ function StepOutput({ step }) {
     return (
       <>
         <div className="step-headline">
-          <span className={`pill pill-${out.status === 'compliant' ? 'teal' : 'rose'}`}>
+          <span className={`pill pill-${complianceTone(out.status)}`}>
             {pretty(out.status)}
           </span>
         </div>

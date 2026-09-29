@@ -2,7 +2,7 @@ import json
 from types import SimpleNamespace
 
 from app.agents.decision_agent import DecisionAgent
-from app.agents.review_agent import ReviewAgent
+from app.agents.review_agent import SYSTEM_PROMPT as REVIEW_SYSTEM_PROMPT, ReviewAgent
 from app.models import (
     AIUseCase,
     ComplianceStatus,
@@ -238,3 +238,72 @@ def test_review_loop_corrects_a_flawed_decision_end_to_end(monkeypatch):
         "report_finalized",
     ]
     assert [e["actor"] for e in entries if e["stage"] == "review"] == ["review_agent"] * 2
+
+
+# ---------------------------------------------------------------------------
+# What the reviewer is told about the four policy determinations.
+#
+# The Policy Compliance Agent gained `undetermined_policies` and
+# `not_applicable_policies`, and build_compliance_context passes all four
+# lists on. The reviewer's own checklist still described only
+# violated/satisfied, so it read "partially_compliant with 0 violated" as a
+# self-contradiction and pushed the Decision Agent to relabel information
+# gaps as non-compliance. In a live run that turned a proportionate
+# `require_human_approval` on a low-risk submission into a `block` with no
+# conditions, which the reviewer then objected to after the revision budget
+# was gone. These pin the semantics the reviewer is given.
+# ---------------------------------------------------------------------------
+
+
+def test_the_reviewer_is_told_what_all_four_determinations_mean():
+    for determination in ("violated", "satisfied", "undetermined", "not applicable"):
+        assert determination in REVIEW_SYSTEM_PROMPT
+
+
+def test_the_reviewer_is_told_an_information_gap_is_not_a_violation():
+    assert "NOT violations" in REVIEW_SYSTEM_PROMPT
+    assert "nothing is broken, some things are unproven" in REVIEW_SYSTEM_PROMPT
+
+
+def test_the_reviewer_is_told_not_to_ask_for_a_harsher_status():
+    assert "do not ask for it to be relabelled non_compliant" in REVIEW_SYSTEM_PROMPT
+    assert "not a harsher status" in REVIEW_SYSTEM_PROMPT
+
+
+def test_the_reviewer_still_refuses_unevidenced_compliance():
+    # The fix must not make the reviewer lenient: silence is still not proof.
+    assert "Silence is still never evidence of compliance" in REVIEW_SYSTEM_PROMPT
+    assert "never assumed compliant" in REVIEW_SYSTEM_PROMPT
+
+
+def test_the_reviewer_is_told_to_flag_a_block_that_rests_only_on_gaps():
+    assert "flag a block that rests only on undetermined policies" in REVIEW_SYSTEM_PROMPT
+
+
+def test_the_reviewer_is_told_to_flag_a_restrictive_decision_with_no_conditions():
+    assert "carries no conditions" in REVIEW_SYSTEM_PROMPT
+
+
+# ---------------------------------------------------------------------------
+# Bounding the reviewer's policy lookups.
+#
+# Every tool result stays in the conversation. A live cross-border run had the
+# reviewer call get_policies ten times unfiltered - the whole ~140-policy
+# repository each time - and the next request came to 218k tokens against
+# gpt-4o-mini's 128k limit, so the submission failed with a 502 after the
+# risk, policy and decision stages had already completed. This is guidance,
+# not a hard cap: see the report for the structural fix.
+# ---------------------------------------------------------------------------
+
+
+def test_the_reviewer_is_warned_that_an_unfiltered_lookup_is_the_whole_repository():
+    assert "returns the whole repository" in REVIEW_SYSTEM_PROMPT
+    assert "exhaust the context window" in REVIEW_SYSTEM_PROMPT
+
+
+def test_the_reviewer_is_told_to_filter_by_category():
+    assert "`category` argument" in REVIEW_SYSTEM_PROMPT
+
+
+def test_the_reviewer_is_told_not_to_repeat_a_lookup_it_already_has():
+    assert "do not fetch the repository again" in REVIEW_SYSTEM_PROMPT

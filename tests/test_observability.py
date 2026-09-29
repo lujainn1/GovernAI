@@ -1,5 +1,6 @@
 """Agent observability: request ids, structured logs, trace capture, the
 agent_runs record linked to the audit log, metrics, and the health report."""
+import importlib
 import json
 import logging
 import time
@@ -18,13 +19,21 @@ from app.models import AIUseCase
 from app.observability import metrics as metrics_module
 from app.observability.context import get_request_id, request_context, sanitize_request_id
 from app.observability.health import (
+    CATEGORIES,
     CRITICAL,
     DEGRADED,
     HEALTHY,
+    SEVERITY,
     build_health_report,
     classify_run_error,
 )
-from app.observability.logging_config import JsonFormatter, TextFormatter, configure_logging, emit
+from app.observability.logging_config import (
+    ROOT_LOGGER,
+    JsonFormatter,
+    TextFormatter,
+    configure_logging,
+    emit,
+)
 from app.observability.metrics import compute_metrics, load_window, percentile
 from app.observability.pricing import estimate_cost_usd, price_for
 from app.observability.recorder import build_run_row, record_agent_run
@@ -216,7 +225,10 @@ def test_trace_records_steps_latency_tokens_and_tool_outcomes(monkeypatch):
 
 
 def test_trace_survives_a_failing_run(monkeypatch):
-    monkeypatch.setattr("app.agents.base.get_client", lambda: Scripted([_completion(content="not json")]))
+    monkeypatch.setattr(
+        "app.agents.base.get_client",
+        lambda: Scripted([_completion(content="not json"), _completion(content="not json either")]),
+    )
     agent = _agent()
 
     with pytest.raises(AgentError):
@@ -224,11 +236,15 @@ def test_trace_survives_a_failing_run(monkeypatch):
 
     assert agent.last_trace["error"]["type"] == "AgentError"
     assert agent.last_trace["started_at"] and agent.last_trace["latency_ms"] >= 0
-    assert agent.last_trace["iterations"] == 1
+    # Two round-trips: the first answer plus the single repair attempt.
+    assert agent.last_trace["iterations"] == 2
 
 
 def test_a_long_unparseable_reply_is_only_previewed_in_the_persisted_error(monkeypatch):
-    monkeypatch.setattr("app.agents.base.get_client", lambda: Scripted([_completion(content="secret " * 500)]))
+    monkeypatch.setattr(
+        "app.agents.base.get_client",
+        lambda: Scripted([_completion(content="secret " * 500)] * 2),
+    )
     agent = _agent()
 
     with pytest.raises(AgentError):
@@ -550,12 +566,37 @@ def test_load_window_filters_by_time_and_flags_truncation(fake_supabase, monkeyp
         ("InternalServerError", "503 Service Unavailable", "PROVIDER_UNAVAILABLE"),
         ("AgentError", "Could not parse a JSON object out of model output: 'hi'", "OUTPUT_CONTRACT"),
         ("AgentError", "decision_agent produced output that does not match DecisionResult", "OUTPUT_CONTRACT"),
+        # A real review_agent failure: it had fetched the whole policy
+        # repository ten times, so the next request no longer fit.
+        (
+            "BadRequestError",
+            "Error code: 400 - {'error': {'message': \"This model's maximum context length is "
+            "128000 tokens. However, your messages resulted in 218336 tokens\"}}",
+            "CONTEXT_LIMIT",
+        ),
+        ("BadRequestError", "context_length_exceeded", "CONTEXT_LIMIT"),
         ("KeyError", "'decision'", "UNKNOWN"),
         (None, None, "UNKNOWN"),
     ],
 )
 def test_failure_classification(error_type, message, expected):
     assert classify_run_error(error_type, message) == expected
+
+
+def test_a_context_overflow_does_not_read_as_a_provider_outage():
+    # It is not a transient API problem and retrying does not fix it, so it
+    # must not be filed next to rate limits and 5xx responses.
+    overflow = classify_run_error("BadRequestError", "maximum context length is 128000 tokens")
+
+    assert overflow == "CONTEXT_LIMIT"
+    assert SEVERITY[overflow] == "high"
+
+
+def test_the_context_limit_action_names_what_to_narrow():
+    action = next(action for name, _, _, action in CATEGORIES if name == "CONTEXT_LIMIT")
+
+    assert "get_policies" in action
+    assert "tool_calls" in action
 
 
 def _ok_runs(n, **overrides):
@@ -623,7 +664,8 @@ def test_failure_categories_keep_a_fixed_severity_order_and_flag_the_dominant_on
     categories = build_health_report(runs, WINDOW)["failure_categories"]
 
     assert [c["category"] for c in categories] == [
-        "CONFIGURATION", "PROVIDER_UNAVAILABLE", "TOOL_FAILURE", "OUTPUT_CONTRACT", "LOOP_LIMIT", "UNKNOWN"
+        "CONFIGURATION", "PROVIDER_UNAVAILABLE", "CONTEXT_LIMIT", "TOOL_FAILURE",
+        "OUTPUT_CONTRACT", "LOOP_LIMIT", "UNKNOWN",
     ]
     assert [c["category"] for c in categories if c["dominant"]] == ["OUTPUT_CONTRACT"]
     assert {c["category"]: c["runs_affected"] for c in categories}["PROVIDER_UNAVAILABLE"] == 1
@@ -762,3 +804,69 @@ def test_request_id_flows_from_the_http_request_into_the_agent_runs(monkeypatch,
     assert response.headers["X-Request-ID"] == "trace-me-end-to-end"
     runs = _rows(fake_supabase, "agent_runs")
     assert len(runs) == 4 and {r["request_id"] for r in runs} == {"trace-me-end-to-end"}
+
+
+# ---------------------------------------------------------------------------
+# Every module that logs a governance-safety event must log inside the tree
+# configure_logging() actually configures.
+#
+# app/agents/policy_agent.py, app/rag/evidence.py and app/memory.py used
+# logging.getLogger(__name__), i.e. the `app.*` tree. configure_logging
+# attaches its handler to `governai` only, so those warnings - a fabricated
+# policy id being dropped, a compliance status being auto-adjusted, SDAIA
+# retrieval being unavailable, agent memory failing - reached stderr through
+# logging's last-resort handler as bare unformatted lines with no request id,
+# and never appeared in the structured log a log aggregator reads. These are
+# exactly the events an operator needs to see.
+# ---------------------------------------------------------------------------
+
+SAFETY_EVENT_MODULES = (
+    "app.agents.base",
+    "app.agents.policy_agent",
+    "app.api",
+    "app.memory",
+    "app.observability.recorder",
+    "app.orchestrator",
+    "app.rag.evidence",
+)
+
+
+@pytest.mark.parametrize("module_name", SAFETY_EVENT_MODULES)
+def test_module_logs_inside_the_configured_tree(module_name):
+    module = importlib.import_module(module_name)
+    loggers = [
+        value
+        for value in vars(module).values()
+        if isinstance(value, logging.Logger)
+    ]
+
+    assert loggers, f"{module_name} defines no module-level logger"
+    for logger in loggers:
+        assert logger.name == ROOT_LOGGER or logger.name.startswith(f"{ROOT_LOGGER}."), (
+            f"{module_name} logs to {logger.name!r}, outside the {ROOT_LOGGER!r} tree that "
+            "configure_logging() configures, so its records never reach the structured log"
+        )
+
+
+def test_a_warning_from_those_trees_is_formatted_with_its_request_id(capsys):
+    root = logging.getLogger(ROOT_LOGGER)
+    before = (list(root.handlers), root.level, root.propagate)
+    try:
+        configure_logging(level="INFO", fmt="json")
+        with request_context("safety-event-request"):
+            logging.getLogger("governai.rag.evidence").warning("retrieval unavailable")
+            logging.getLogger("governai.agents.policy").warning("status auto-adjusted")
+    finally:
+        root.handlers = before[0]
+        root.level = before[1]
+        root.propagate = before[2]
+
+    lines = [line for line in capsys.readouterr().err.splitlines() if line.startswith("{")]
+    payloads = [json.loads(line) for line in lines]
+    emitted = {p["logger"]: p for p in payloads}
+
+    assert "governai.rag.evidence" in emitted
+    assert "governai.agents.policy" in emitted
+    for payload in emitted.values():
+        assert payload["level"] == "WARNING"
+        assert payload["request_id"] == "safety-event-request"

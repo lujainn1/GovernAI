@@ -1,5 +1,5 @@
 """Shared prompt-building helpers."""
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from app.models import (
     AIUseCase,
@@ -37,12 +37,52 @@ Rationale: {risk.rationale}
 """
 
 
+def build_evidence_context(candidates: List[Dict[str, Any]]) -> str:
+    """Render the retrieved SDAIA passages for an agent prompt.
+
+    Ids are the retrieval order (E1 first), which is deliberately not a
+    statement about which passage is most relevant - the agent is asked to
+    judge that itself.
+    """
+    if not candidates:
+        return """SDAIA RETRIEVED EVIDENCE
+========================
+(no SDAIA passages were retrieved for this submission)
+"""
+
+    blocks = []
+
+    for candidate in candidates:
+        blocks.append(
+            f"[{candidate['evidence_id']}]\n"
+            f"Source: {candidate['source']}\n"
+            f"Page: {candidate['page']}\n"
+            f"Passage: {' '.join(str(candidate['text']).split())}"
+        )
+
+    listing = "\n\n".join(blocks)
+
+    return f"""SDAIA RETRIEVED EVIDENCE
+========================
+{listing}
+"""
+
+
 def build_compliance_context(compliance: PolicyComplianceResult) -> str:
+    """Render the compliance findings for the Decision and Review agents.
+
+    `undetermined_policies` are applicable policies the submission did not
+    settle either way. They are listed separately from violations on purpose:
+    they are open information gaps to be resolved (by conditions or by a
+    human), not breaches.
+    """
     return f"""Policy Compliance Check (already completed)
 =============================================
 Status: {compliance.status.value}
-Violated policies: {", ".join(compliance.violated_policies) or "none"}
-Satisfied policies: {", ".join(compliance.satisfied_policies) or "none"}
+Violated policies (evidence of a conflict): {", ".join(compliance.violated_policies) or "none"}
+Satisfied policies (evidence the requirement is met): {", ".join(compliance.satisfied_policies) or "none"}
+Undetermined policies (applicable, but the submission does not show either way - information gaps, not violations): {", ".join(compliance.undetermined_policies) or "none"}
+Not applicable to this use case: {", ".join(compliance.not_applicable_policies) or "none"}
 Rationale: {compliance.rationale}
 """
 

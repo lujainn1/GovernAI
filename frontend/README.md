@@ -16,6 +16,11 @@ has CORS enabled for `http://localhost:5173` if you call it directly.
 
 ```bash
 npm install
+cp .env.example .env
+# edit .env and set VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY to the same
+# project the backend uses (Supabase dashboard -> Project Settings -> API).
+# Without them the app loads but every sign-in and API call fails, because
+# the browser has no Supabase session to send as a bearer token.
 npm run dev
 # -> http://localhost:5173
 ```

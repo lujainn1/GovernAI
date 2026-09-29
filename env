@@ -1,0 +1,34 @@
+# OpenAI API configuration
+# Get a key at https://platform.openai.com/api-keys
+OPENAI_API_KEY=your_openai_api_key_here
+
+# Any OpenAI model, e.g. gpt-4o-mini, gpt-4o, gpt-4.1-mini
+OPENAI_MODEL=gpt-4o-mini
+
+# Optional: how many times the Review Agent may send the Decision Agent back
+# for a revision (default 1; 0 = review only, never re-run the Decision Agent)
+# GOVERNAI_MAX_REVIEW_REVISIONS=1
+
+# Optional: long-term agent memory (needs supabase/migrations/0002_agent_memory.sql)
+# GOVERNAI_MEMORY_ENABLED=true
+# How many similar past cases to recall, and the minimum cosine similarity (0-1)
+# a past case needs to be recalled
+# GOVERNAI_MEMORY_TOP_K=3
+# GOVERNAI_MEMORY_MIN_SIMILARITY=0.35
+# GOVERNAI_EMBEDDING_MODEL=text-embedding-3-small
+
+# Logging: json (one object per line, every line carries the request id) or text
+# GOVERNAI_LOG_LEVEL=INFO
+# GOVERNAI_LOG_FORMAT=json
+# Optional per-model price override for cost estimates, USD per 1M tokens [input, output]
+# GOVERNAI_MODEL_PRICES={"gpt-4o-mini": [0.15, 0.60]}
+
+# Optional: override where the seed-data YAML files (policies/risk rules) live
+# GOVERNAI_DATA_DIR=./data
+
+# Supabase (authentication + database)
+# Project Settings -> API in your Supabase dashboard
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=your_supabase_anon_key_here
+# Service role key: keep this secret, backend-only, never expose to the frontend.
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key_here

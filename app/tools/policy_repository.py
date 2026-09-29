@@ -89,6 +89,11 @@ def get_policies(
     return policies
 
 
+def policy_ids() -> set:
+    """Every policy id in the repository, for validating model output."""
+    return {policy["id"] for policy in get_policies()}
+
+
 def search_policies(
     query: str,
 ) -> List[Dict[str, Any]]:
@@ -120,10 +125,17 @@ GET_POLICIES_SCHEMA = {
                 "category": {
                     "type": "string",
                     "description": (
-                        "Optional category filter: "
-                        "data_privacy, security, "
-                        "human_oversight, third_party_data, "
-                        "transparency, or fairness."
+                        "Optional category filter. The categories present in "
+                        "the repository, with the number of policies in each: "
+                        "pdpl (32), accountability_responsibility (18), "
+                        "fairness (15), privacy_security (13), genai (12), "
+                        "cross_border_transfer (12), "
+                        "transparency_explainability (10), reliability_safety "
+                        "(9), humanity (7), social_environmental_benefits (4), "
+                        "data_privacy (2), security (2), transparency (2), "
+                        "human_oversight (1), third_party_data (1). Omitting "
+                        "the filter returns all ~140 policies, most of which "
+                        "will not be relevant to a single use case."
                     ),
                 },
                 "min_risk_level": {
@@ -135,8 +147,11 @@ GET_POLICIES_SCHEMA = {
                         "critical",
                     ],
                     "description": (
-                        "Only return policies that apply "
-                        "at or below this risk level."
+                        "Only return policies that apply at or below this risk "
+                        "level. Note that almost every policy in this "
+                        "repository is recorded as min_risk_level 'low', so "
+                        "this filter removes very little - use `category` to "
+                        "narrow a search."
                     ),
                 },
             },

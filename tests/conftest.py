@@ -91,6 +91,56 @@ class FakeEmbeddingsClient:
         )
 
 
+class FakeSDAIARetrieval:
+    """Offline stand-in for SDAIA evidence retrieval (app.rag.evidence).
+
+    `PolicyComplianceAgent.check` retrieves SDAIA passages, which loads the
+    FAISS index and embeds the query through the OpenAI API - a real network
+    call, and a real bill, on every test that runs that agent. This replaces
+    the retrieval step so the suite stays offline and deterministic.
+
+    The default is "nothing retrieved", which is exactly what the agent sees
+    when the index or the embedding API is unavailable. A test that wants
+    passages assigns them to `.passages`; `.queries` records what was asked
+    for, so a test can assert on the query the agent built.
+    """
+
+    def __init__(self):
+        self.passages: List[Dict[str, Any]] = []
+        self.queries: List[str] = []
+
+    def __call__(self, query, k=5):
+        self.queries.append(query)
+        return list(self.passages[:k])
+
+    @staticmethod
+    def passage(evidence_id: str, **overrides) -> Dict[str, Any]:
+        """One retrieved passage in the shape app.rag.evidence returns."""
+        passage = {
+            "evidence_id": evidence_id,
+            "source": "ai-principles.pdf",
+            "title": "AI Ethics Principles",
+            "page": 16,
+            "text": f"Passage {evidence_id} about personal data protection.",
+        }
+        passage.update(overrides)
+        return passage
+
+
+@pytest.fixture(autouse=True)
+def fake_sdaia_retrieval(monkeypatch):
+    """Keep SDAIA retrieval offline for every test (see FakeSDAIARetrieval).
+
+    Patched where the Policy Compliance Agent looks the name up, so the
+    adapter in app.rag.evidence is still tested directly against its own
+    fakes (tests/test_evidence_retrieval.py). Returned so a test can supply
+    passages or inspect the query.
+    """
+    retrieval = FakeSDAIARetrieval()
+    monkeypatch.setattr("app.agents.policy_agent.retrieve_evidence", retrieval)
+    return retrieval
+
+
 @pytest.fixture(autouse=True)
 def fake_embeddings(monkeypatch):
     """Route app.memory's embedding calls to the offline fake (see above).

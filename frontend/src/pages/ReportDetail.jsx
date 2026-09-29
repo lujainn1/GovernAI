@@ -12,7 +12,7 @@ import { AGENT_META } from '../agentMeta.js'
 import StepStatus from '../components/StepStatus.jsx'
 import { approveUseCase, getAuditLog, getPipelineRun, getReport } from '../api.js'
 import { getSession } from '../auth.js'
-import { decisionTone, pretty, statusTone, timeAgo } from '../format.js'
+import { complianceTone, decisionTone, pretty, statusTone, timeAgo } from '../format.js'
 
 function Tags({ items, tone }) {
   if (!items || items.length === 0) {
@@ -169,7 +169,7 @@ export default function ReportDetail() {
           <div className="ov-panel">
             <div className="ov-panel-head">
               <h2>Policy compliance</h2>
-              <span className={`pill pill-${policy_compliance?.status === 'compliant' ? 'teal' : 'rose'}`}>
+              <span className={`pill pill-${complianceTone(policy_compliance?.status)}`}>
                 {pretty(policy_compliance?.status)}
               </span>
             </div>

@@ -21,6 +21,20 @@ export function decisionTone(decision) {
   return 'neutral'
 }
 
+// The Policy Compliance Agent now separates policies it found a conflict with
+// from ones that merely apply and are unproven (`undetermined_policies`), so
+// `partially_compliant` can mean "nothing is broken, some things are not
+// evidenced". Showing that in the same red as `non_compliant` reads as a
+// policy breach, so it gets amber - the same tone the platform already uses
+// for "needs a person to look".
+export function complianceTone(status) {
+  const s = (status || '').toLowerCase()
+  if (s === 'compliant') return 'teal'
+  if (s === 'partially_compliant') return 'amber'
+  if (s === 'non_compliant') return 'rose'
+  return 'neutral'
+}
+
 export function statusTone(status) {
   const s = (status || '').toLowerCase()
   if (s === 'blocked' || s === 'rejected_by_human') return 'rose'

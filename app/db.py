@@ -50,6 +50,25 @@ def _url(table: str) -> str:
     return f"{config.SUPABASE_URL}/rest/v1/{table}"
 
 
+# Postgres "invalid input syntax for type ..." - raised when a filter value
+# cannot be cast to the column's type, e.g. a path parameter that is not a
+# UUID compared against use_cases.id. It means the caller asked for something
+# that cannot exist, not that the database is unhealthy, so callers translate
+# it into an empty result instead of letting it surface as a 500.
+INVALID_TEXT_REPRESENTATION = "22P02"
+
+
+def is_invalid_value_error(exc: httpx.HTTPStatusError) -> bool:
+    """True if PostgREST rejected a filter value as uncastable."""
+    if exc.response.status_code != 400:
+        return False
+    try:
+        body = exc.response.json() or {}
+    except ValueError:
+        return False
+    return body.get("code") == INVALID_TEXT_REPRESENTATION
+
+
 def select(table: str, params: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
     """SELECT rows. `params` uses PostgREST query syntax, e.g.
     {"category": "eq.security", "order": "id.asc"}."""

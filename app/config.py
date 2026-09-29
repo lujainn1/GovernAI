@@ -24,6 +24,25 @@ RISK_RULES_FILE = DATA_DIR / "risk_rules.yaml"
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
 
+# --- Backup LLM provider (optional, off by default) -------------------------
+# GovernAI uses OpenAI/GPT as its provider. DeepSeek serves an
+# OpenAI-compatible chat-completions API and can stand in for it manually when
+# OpenAI is unavailable; it is selected only by setting
+# GOVERNAI_LLM_PROVIDER=deepseek, and nothing falls over to it automatically.
+#
+# The switch covers CHAT COMPLETIONS ONLY. Embeddings (app/memory.py, and the
+# SDAIA retriever) stay on OpenAI, because DeepSeek serves no embeddings
+# endpoint - so a DeepSeek run is not independent of OpenAI.
+LLM_PROVIDER = os.environ.get("GOVERNAI_LLM_PROVIDER", "openai").strip().lower()
+
+DEEPSEEK_API_KEY = os.environ.get("DEEPSEEK_API_KEY")
+DEEPSEEK_BASE_URL = os.environ.get("DEEPSEEK_BASE_URL", "https://api.deepseek.com")
+DEEPSEEK_MODEL = os.environ.get("DEEPSEEK_MODEL", "deepseek-flash")
+# deepseek-flash is a reasoning model and answers far more slowly than
+# gpt-4o-mini, so a request is bounded rather than left to hang.
+DEEPSEEK_TIMEOUT = float(os.environ.get("DEEPSEEK_TIMEOUT", "180"))
+DEEPSEEK_MAX_RETRIES = int(os.environ.get("DEEPSEEK_MAX_RETRIES", "1"))
+
 MAX_TOOL_ITERATIONS = int(os.environ.get("GOVERNAI_MAX_TOOL_ITERATIONS", "10"))
 
 # How many times the Review Agent may send the Decision Agent back for a

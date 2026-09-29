@@ -17,7 +17,7 @@ from pydantic import BaseModel, ValidationError
 
 from app import config
 from app.evaluation.checks import tool_succeeded
-from app.llm_client import get_client
+from app.llm_client import active_chat_model, get_chat_client, get_client
 from app.models import utcnow_iso
 from app.observability.logging_config import emit
 
@@ -35,18 +35,42 @@ class AgentError(RuntimeError):
 
 
 def _extract_json(content: str) -> Dict[str, Any]:
+    """Parse the JSON object out of a model's final message.
+
+    Always raises AgentError - never a bare JSONDecodeError - for anything
+    unparseable, so callers have a single failure type: app.api turns it into
+    a 502 with a real message instead of letting it escape as an unhandled
+    500. This is model- and provider-neutral; nothing here is specific to any
+    vendor.
+    """
     content = (content or "").strip()
     # Strip markdown code fences if the model wrapped its JSON in one.
     if content.startswith("```"):
         content = content.strip("`")
         content = re.sub(r"^json\s*", "", content, flags=re.IGNORECASE).strip()
     try:
-        return json.loads(content)
+        parsed = json.loads(content)
+        if isinstance(parsed, dict):
+            return parsed
     except json.JSONDecodeError:
         pass
+
+    # A model sometimes emits a complete object and then keeps talking, which
+    # json.loads rejects as "Extra data". raw_decode reads the first value and
+    # ignores the rest, which is the answer that was asked for.
+    try:
+        decoded, _ = json.JSONDecoder().raw_decode(content)
+        if isinstance(decoded, dict):
+            return decoded
+    except json.JSONDecodeError:
+        pass
+
     match = _JSON_BLOCK_RE.search(content)
     if match:
-        return json.loads(match.group(0))
+        try:
+            return json.loads(match.group(0))
+        except json.JSONDecodeError:
+            pass
     # Only a short preview: this message is persisted with the agent run.
     raise AgentError(f"Could not parse a JSON object out of model output: {content[:_OUTPUT_PREVIEW_CHARS]!r}")
 
@@ -95,7 +119,7 @@ class BaseAgent:
         self.system_prompt = system_prompt
         self.tools = tools or []
         self.tool_functions = tool_functions or {}
-        self.model = model or config.OPENAI_MODEL
+        self.model = model or active_chat_model()
         # Long-term memory (see app.memory): the orchestrator sets this to the
         # recalled past cases for the run in progress, and `run` appends it to
         # the input. Empty means the agent runs without precedent.
@@ -146,7 +170,7 @@ class BaseAgent:
         response_model: Type[ResponseModel],
         max_tool_iterations: int,
     ) -> ResponseModel:
-        client = get_client()
+        client = get_chat_client(get_client)
 
         if self.memory_context:
             user_message = f"{user_message}\n\n{self.memory_context}"
@@ -160,6 +184,9 @@ class BaseAgent:
             {"role": "system", "content": f"{self.system_prompt}\n\n{schema_hint}"},
             {"role": "user", "content": user_message},
         ]
+
+        # One structured-output repair per run (see the final-answer branch).
+        repair_attempted = False
 
         for _ in range(max_tool_iterations):
             kwargs: Dict[str, Any] = {"model": self.model, "messages": messages}
@@ -265,12 +292,57 @@ class BaseAgent:
                 continue
 
             # No tool calls: this is the model's final answer.
-            data = _extract_json(message.content or "")
+            content = message.content or ""
             try:
-                return response_model.model_validate(data)
-            except ValidationError as exc:
-                raise AgentError(
-                    f"{self.name} produced output that does not match {response_model.__name__}: {exc}"
-                ) from exc
+                return self._parse_final_answer(content, response_model)
+            except AgentError as exc:
+                # A model occasionally drops a required field or wraps its JSON
+                # in prose. That is recoverable, so it gets exactly one chance
+                # to restate the SAME findings in the right shape - it is told
+                # what was wrong with the format, never what to answer. A
+                # second failure is a real failure and propagates unchanged, so
+                # persistent breakage is never hidden.
+                if repair_attempted:
+                    raise
+                repair_attempted = True
+                emit(
+                    logger,
+                    "output_repair",
+                    logging.WARNING,
+                    agent=self.name,
+                    response_model=response_model.__name__,
+                    error=str(exc)[:300],
+                )
+                messages.append({"role": "assistant", "content": content})
+                messages.append(
+                    {
+                        "role": "user",
+                        "content": (
+                            f"Your last message could not be used: {exc}\n\n"
+                            "Send your answer again as ONLY a single raw JSON object "
+                            "(no markdown, no commentary) that matches the schema you "
+                            "were given, including every required field. Do not change "
+                            "your findings - only the format."
+                        ),
+                    }
+                )
+                continue
 
         raise AgentError(f"{self.name} exceeded max_tool_iterations ({max_tool_iterations}) without a final answer")
+
+    def _parse_final_answer(
+        self, content: str, response_model: Type[ResponseModel]
+    ) -> ResponseModel:
+        """Parse the model's final message into `response_model`.
+
+        Raises AgentError for both an unparseable message and one that parses
+        but does not satisfy the model, so `_run_loop` can offer the same
+        single correction for either."""
+        data = _extract_json(content)
+        try:
+            return response_model.model_validate(data)
+        except ValidationError as exc:
+            raise AgentError(
+                f"{self.name} produced output that does not match "
+                f"{response_model.__name__}: {exc}"
+            ) from exc

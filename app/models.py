@@ -76,11 +76,56 @@ class RiskAssessmentResult(BaseModel):
     suggested_new_rules: List[SuggestedRiskRule] = Field(default_factory=list)
 
 
+class EvidenceCitation(BaseModel):
+    """One retrieved SDAIA passage an agent cited.
+
+    Always built in code from the retrieval record (see
+    app.rag.evidence.resolve_citations), never from model output, so a source
+    or page the model invents cannot reach a report.
+    """
+
+    evidence_id: str
+    source: str
+    page: int
+    quote: str
+
+
 class PolicyComplianceResult(BaseModel):
+    """The Policy Compliance Agent's findings.
+
+    A policy the agent looked at falls into exactly one of four states.
+    `violated_policies` and `satisfied_policies` are the original two and keep
+    their meaning: reasonable evidence of a conflict, and reasonable evidence
+    that the requirement is met. The two added lists cover what the schema
+    previously had no way to say, which forced every unproven requirement into
+    `violated_policies`:
+
+    undetermined_policies
+        The policy applies, but the submission shows neither compliance nor a
+        conflict. Missing information belongs here, not in
+        `violated_policies` - an information gap is not a breach. The Decision
+        Agent still sees these and can require human approval.
+
+    not_applicable_policies
+        The policy's `applies_when` conditions are not met by this use case
+        (e.g. a cross-border-transfer rule for a system that keeps all data in
+        country), so there is nothing to judge.
+
+    Both default to empty, so payloads written before they existed - and any
+    consumer that does not know about them - stay valid.
+    """
+
     status: ComplianceStatus
     violated_policies: List[str] = Field(default_factory=list)
     satisfied_policies: List[str] = Field(default_factory=list)
+    undetermined_policies: List[str] = Field(default_factory=list)
+    not_applicable_policies: List[str] = Field(default_factory=list)
     rationale: str
+    # Optional SDAIA evidence. Both default to empty, so every existing caller
+    # and stored payload stays valid. evidence_ids: what the agent cited, as
+    # returned. evidence: those ids resolved against the retrieved passages.
+    evidence_ids: List[str] = Field(default_factory=list)
+    evidence: List[EvidenceCitation] = Field(default_factory=list)
 
 
 class DecisionResult(BaseModel):

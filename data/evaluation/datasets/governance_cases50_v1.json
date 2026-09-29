@@ -1,0 +1,1296 @@
+[
+ {
+  "id": "N01",
+  "domain": "healthcare",
+  "name": "Radiology Triage Prioritiser",
+  "description": "A model that reads chest X-rays as they arrive and reorders the radiologist's worklist so likely-urgent studies are read first. It never issues a diagnosis and never removes a study from the list; a radiologist reads every image regardless of order.",
+  "owner": "Imaging Informatics",
+  "data_classification": "personal data",
+  "deployment_context": "internal-tool",
+  "autonomy_level": "human-in-the-loop",
+  "documentation": "Processes patient identifiers and images. Hosted in-Kingdom on the hospital's own infrastructure. A DPIA was completed in March 2026 and is on file. Model performance was validated on 4,200 local studies with sensitivity reported by subgroup (age, sex). Radiologists are told the ordering is AI-assisted. Full audit log of every reordering is retained for 3 years.",
+  "expect": {
+   "risk": [
+    "medium",
+    "high"
+   ],
+   "decision_not": [
+    "block"
+   ],
+   "should_flag": [],
+   "should_not_flag": [
+    "DPIA missing",
+    "no bias testing",
+    "no audit log"
+   ]
+  }
+ },
+ {
+  "id": "N02",
+  "domain": "healthcare",
+  "name": "Autonomous Medication Dose Adjuster",
+  "description": "An agent that changes insulin dosing instructions in the electronic medical record automatically based on glucose sensor trends, without clinician confirmation. Changes take effect immediately and the patient is notified by SMS.",
+  "owner": "Endocrinology Digital",
+  "data_classification": "personal data",
+  "deployment_context": "customer-facing",
+  "autonomy_level": "fully-autonomous",
+  "documentation": "No clinician approval step exists. Health data including glucose readings and medication history is processed. No DPIA has been completed. No clinical validation study has been run. There is no mechanism for a patient or clinician to contest or roll back a change. Decisions are not logged with the inputs used.",
+  "expect": {
+   "risk": [
+    "critical"
+   ],
+   "decision_not": [
+    "approve"
+   ],
+   "should_flag": [
+    "no human oversight",
+    "no DPIA",
+    "no validation",
+    "no redress"
+   ],
+   "should_not_flag": []
+  }
+ },
+ {
+  "id": "N03",
+  "domain": "healthcare",
+  "name": "Clinic Appointment No-Show Predictor",
+  "description": "Predicts which booked patients are likely not to attend, so reception can send an extra reminder. Output is only used to trigger a reminder message; no appointment is cancelled or deprioritised.",
+  "owner": "Clinic Operations",
+  "data_classification": "personal data",
+  "deployment_context": "internal-tool",
+  "autonomy_level": "human-on-the-loop",
+  "documentation": "Uses appointment history and postcode. Data stays in-Kingdom. No fairness assessment has been performed, and postcode is used as a feature which may correlate with socioeconomic status. Retention is 12 months. Patients are not told a prediction is made about them.",
+  "expect": {
+   "risk": [
+    "medium"
+   ],
+   "decision_not": [
+    "approve"
+   ],
+   "should_flag": [
+    "no fairness assessment",
+    "proxy feature",
+    "no transparency to patients"
+   ],
+   "should_not_flag": []
+  }
+ },
+ {
+  "id": "N04",
+  "domain": "banking",
+  "name": "Credit Card Fraud Alert Scorer",
+  "description": "Scores card transactions in real time and holds suspicious ones for a fraud analyst to review within 15 minutes. No transaction is permanently declined by the model alone; an analyst confirms or releases every hold.",
+  "owner": "Financial Crime",
+  "data_classification": "confidential",
+  "deployment_context": "customer-facing",
+  "autonomy_level": "human-in-the-loop",
+  "documentation": "Processes transaction and cardholder data in-Kingdom. Model is monitored weekly for drift with documented thresholds. Analysts see the top contributing features for each hold. A customer can call to have a hold released immediately. Annual bias review across customer segments is documented.",
+  "expect": {
+   "risk": [
+    "medium",
+    "high"
+   ],
+   "decision_not": [
+    "block"
+   ],
+   "should_flag": [],
+   "should_not_flag": [
+    "no monitoring",
+    "no explainability",
+    "no redress"
+   ]
+  }
+ },
+ {
+  "id": "N05",
+  "domain": "banking",
+  "name": "Automated Mortgage Rejection Engine",
+  "description": "Declines mortgage applications automatically below a model score threshold. Declined applicants receive a form letter with no reason. There is no appeal route and no human review of declines.",
+  "owner": "Retail Lending",
+  "data_classification": "restricted",
+  "deployment_context": "customer-facing",
+  "autonomy_level": "fully-autonomous",
+  "documentation": "Features include age, marital status, nationality and district of residence. No fairness or disparate-impact testing has been performed. No DPIA. No model card. Feature values used for a decision are not retained, so a decision cannot be reconstructed or contested.",
+  "expect": {
+   "risk": [
+    "critical"
+   ],
+   "decision_not": [
+    "approve"
+   ],
+   "should_flag": [
+    "no human oversight",
+    "no appeal",
+    "no fairness testing",
+    "protected attributes",
+    "no DPIA"
+   ],
+   "should_not_flag": []
+  }
+ },
+ {
+  "id": "N06",
+  "domain": "banking",
+  "name": "Branch Queue Forecaster",
+  "description": "Forecasts hourly branch footfall from historical aggregate counts so staffing rotas can be planned a week ahead. Uses only aggregated, non-identifiable counts per branch per hour.",
+  "owner": "Branch Operations",
+  "data_classification": "internal",
+  "deployment_context": "internal-tool",
+  "autonomy_level": "human-on-the-loop",
+  "documentation": "No personal data is processed; inputs are aggregate counts with no customer identifiers. Hosted in-Kingdom. A manager approves each published rota. Retention 24 months of aggregates.",
+  "expect": {
+   "risk": [
+    "low"
+   ],
+   "decision_not": [
+    "block"
+   ],
+   "should_flag": [],
+   "should_not_flag": [
+    "personal data",
+    "cross-border"
+   ]
+  }
+ },
+ {
+  "id": "N07",
+  "domain": "banking",
+  "name": "Offshore Customer Call Transcription",
+  "description": "Sends recorded customer service calls to an overseas speech-to-text vendor for transcription and quality scoring. Recordings contain customer names, account numbers and occasionally health information mentioned in passing.",
+  "owner": "Contact Centre Quality",
+  "data_classification": "personal data",
+  "deployment_context": "internal-tool",
+  "autonomy_level": "human-on-the-loop",
+  "documentation": "Audio is uploaded to the vendor's servers in Germany and Singapore. No transfer impact assessment has been recorded and no adequacy or SDAIA/PDPL approval has been sought. The vendor's standard terms allow retention of audio for model improvement; the bank has not opted out. Customers hear a generic 'calls may be recorded' notice that does not mention transfer abroad or model training.",
+  "expect": {
+   "risk": [
+    "high",
+    "critical"
+   ],
+   "decision_not": [
+    "approve"
+   ],
+   "should_flag": [
+    "cross-border transfer",
+    "no transfer assessment",
+    "no consent for training",
+    "vendor retention"
+   ],
+   "should_not_flag": []
+  }
+ },
+ {
+  "id": "N08",
+  "domain": "government",
+  "name": "Citizen Enquiry Router",
+  "description": "Classifies incoming citizen enquiries by topic and routes them to the correct department inbox. The text is read by a human officer in every case; the model only chooses the inbox.",
+  "owner": "Digital Services",
+  "data_classification": "personal data",
+  "deployment_context": "customer-facing",
+  "autonomy_level": "human-in-the-loop",
+  "documentation": "Enquiries may contain names and national IDs. Processing is in-Kingdom on government cloud. Misroutes are corrected by officers and logged. A privacy notice tells citizens that automated routing is used. Retention follows the records schedule of 5 years. No decision about the citizen is made by the model.",
+  "expect": {
+   "risk": [
+    "low",
+    "medium"
+   ],
+   "decision_not": [
+    "block"
+   ],
+   "should_flag": [],
+   "should_not_flag": [
+    "no transparency",
+    "cross-border"
+   ]
+  }
+ },
+ {
+  "id": "N09",
+  "domain": "government",
+  "name": "Benefits Eligibility Auto-Decider",
+  "description": "Determines social benefit eligibility and terminates payments automatically when the model predicts ineligibility. No caseworker reviews a termination before it takes effect.",
+  "owner": "Social Support Programme",
+  "data_classification": "restricted",
+  "deployment_context": "customer-facing",
+  "autonomy_level": "fully-autonomous",
+  "documentation": "Uses income records, household composition and employment history. Terminations take effect immediately with a generic notice. There is no caseworker review and no documented appeal process. No DPIA and no fairness testing. The model was trained on five-year-old historical decisions whose correctness was never audited.",
+  "expect": {
+   "risk": [
+    "critical"
+   ],
+   "decision_not": [
+    "approve"
+   ],
+   "should_flag": [
+    "no human oversight",
+    "no appeal",
+    "no DPIA",
+    "no fairness testing",
+    "consequential decision"
+   ],
+   "should_not_flag": []
+  }
+ },
+ {
+  "id": "N10",
+  "domain": "government",
+  "name": "Public Consultation Summariser",
+  "description": "Summarises published public consultation responses into themes for a policy team. All inputs are already published on the government website with consent for publication.",
+  "owner": "Policy Unit",
+  "data_classification": "public",
+  "deployment_context": "internal-tool",
+  "autonomy_level": "human-on-the-loop",
+  "documentation": "Inputs are already-public consultation submissions. Summaries are checked by a policy officer before use. Processing is in-Kingdom. The published report states that AI assisted the thematic summarisation. No personal data beyond what respondents chose to publish.",
+  "expect": {
+   "risk": [
+    "low"
+   ],
+   "decision_not": [
+    "block"
+   ],
+   "should_flag": [],
+   "should_not_flag": [
+    "personal data",
+    "cross-border",
+    "no transparency"
+   ]
+  }
+ },
+ {
+  "id": "N11",
+  "domain": "government",
+  "name": "Municipal Permit Document Checker",
+  "description": "Checks uploaded building permit documents for completeness against a checklist and tells the applicant which documents are missing. It does not approve or reject permits.",
+  "owner": "Municipality Licensing",
+  "data_classification": "confidential",
+  "deployment_context": "customer-facing",
+  "autonomy_level": "human-in-the-loop",
+  "documentation": "Processes commercial documents and applicant contact details, in-Kingdom. An officer makes every permit decision. Applicants are told an automated completeness check runs first. Accuracy of the completeness check was measured at 93% on 500 historical applications. Audit log retained 7 years.",
+  "expect": {
+   "risk": [
+    "low",
+    "medium"
+   ],
+   "decision_not": [
+    "block"
+   ],
+   "should_flag": [],
+   "should_not_flag": [
+    "autonomous decision",
+    "no accuracy evaluation"
+   ]
+  }
+ },
+ {
+  "id": "N12",
+  "domain": "hr",
+  "name": "CV Shortlisting Ranker",
+  "description": "Ranks job applicants' CVs and presents the top 20 to recruiters. Applicants below the cut are not shown to any human and receive an automated rejection.",
+  "owner": "Talent Acquisition",
+  "data_classification": "personal data",
+  "deployment_context": "internal-tool",
+  "autonomy_level": "human-on-the-loop",
+  "documentation": "Trained on ten years of historical hiring decisions. No adverse-impact analysis by gender or nationality has been performed. Applicants are not told that ranking is automated. Rejected candidates below the cut are never seen by a recruiter. No DPIA.",
+  "expect": {
+   "risk": [
+    "high",
+    "critical"
+   ],
+   "decision_not": [
+    "approve"
+   ],
+   "should_flag": [
+    "no fairness testing",
+    "historical bias",
+    "no transparency",
+    "effective automated rejection",
+    "no DPIA"
+   ],
+   "should_not_flag": []
+  }
+ },
+ {
+  "id": "N13",
+  "domain": "hr",
+  "name": "Internal Job Recommendation Feed",
+  "description": "Suggests internal vacancies to employees based on their own stated skills and the job descriptions. Employees opt in, can see why a role was suggested, and applying is entirely their choice.",
+  "owner": "People Development",
+  "data_classification": "internal",
+  "deployment_context": "internal-tool",
+  "autonomy_level": "human-on-the-loop",
+  "documentation": "Opt-in only; employees can turn it off. Uses self-declared skills, not performance data. No decision about the employee is made and no manager sees the recommendations. Explanation shown for each suggestion. In-Kingdom hosting. Retention until opt-out.",
+  "expect": {
+   "risk": [
+    "low"
+   ],
+   "decision_not": [
+    "block"
+   ],
+   "should_flag": [],
+   "should_not_flag": [
+    "consequential decision",
+    "no transparency",
+    "no consent"
+   ]
+  }
+ },
+ {
+  "id": "N14",
+  "domain": "hr",
+  "name": "Continuous Productivity Scorer",
+  "description": "Scores employee productivity continuously from keystroke counts, application usage and webcam presence detection, and feeds the score into performance reviews and termination decisions.",
+  "owner": "Workforce Analytics",
+  "data_classification": "personal data",
+  "deployment_context": "internal-tool",
+  "autonomy_level": "human-on-the-loop",
+  "documentation": "Monitors keystrokes and uses webcam presence detection throughout the working day. Employees were not consulted and cannot opt out. Scores feed performance and termination decisions. No DPIA, no proportionality assessment, no fairness testing. Employees cannot see or contest their score.",
+  "expect": {
+   "risk": [
+    "high",
+    "critical"
+   ],
+   "decision_not": [
+    "approve"
+   ],
+   "should_flag": [
+    "disproportionate monitoring",
+    "no consent",
+    "no DPIA",
+    "no redress",
+    "consequential decision"
+   ],
+   "should_not_flag": []
+  }
+ },
+ {
+  "id": "N15",
+  "domain": "hr",
+  "name": "Payroll Anomaly Flagger",
+  "description": "Flags payroll runs whose totals deviate from expectation so a payroll officer can check before payment is released. Flags only; never blocks or alters a payment.",
+  "owner": "Payroll",
+  "data_classification": "confidential",
+  "deployment_context": "internal-tool",
+  "autonomy_level": "human-in-the-loop",
+  "documentation": "Uses aggregate payroll totals and per-department sums, in-Kingdom. A payroll officer reviews every flag and releases payment. No individual employee decision is made. Audit trail of flags retained 7 years. Threshold logic is documented.",
+  "expect": {
+   "risk": [
+    "low",
+    "medium"
+   ],
+   "decision_not": [
+    "block"
+   ],
+   "should_flag": [],
+   "should_not_flag": [
+    "autonomous decision",
+    "no audit trail"
+   ]
+  }
+ },
+ {
+  "id": "N16",
+  "domain": "education",
+  "name": "Automated Exam Essay Grader",
+  "description": "Assigns final grades to university entrance essays with no human marker involved. The grade is final and there is no re-mark route.",
+  "owner": "Admissions Office",
+  "data_classification": "personal data",
+  "deployment_context": "customer-facing",
+  "autonomy_level": "fully-autonomous",
+  "documentation": "No human marker reviews any essay. No re-mark or appeal process exists. Agreement with human markers was measured once at 0.61 correlation and not since. No fairness analysis across first-language groups. Students are not told grading is fully automated.",
+  "expect": {
+   "risk": [
+    "high",
+    "critical"
+   ],
+   "decision_not": [
+    "approve"
+   ],
+   "should_flag": [
+    "no human oversight",
+    "no appeal",
+    "weak accuracy",
+    "no fairness testing",
+    "no transparency"
+   ],
+   "should_not_flag": []
+  }
+ },
+ {
+  "id": "N17",
+  "domain": "education",
+  "name": "Study Material Recommender",
+  "description": "Recommends optional practice exercises to students based on which topics they have completed. Recommendations carry no grade consequence and students can ignore them.",
+  "owner": "Learning Technology",
+  "data_classification": "internal",
+  "deployment_context": "internal-tool",
+  "autonomy_level": "human-on-the-loop",
+  "documentation": "Uses only course progress data, no assessment outcomes. No grading impact. Students are told recommendations are automated and can dismiss them. In-Kingdom hosting. Retention one academic year.",
+  "expect": {
+   "risk": [
+    "low"
+   ],
+   "decision_not": [
+    "block"
+   ],
+   "should_flag": [],
+   "should_not_flag": [
+    "consequential decision",
+    "no transparency"
+   ]
+  }
+ },
+ {
+  "id": "N18",
+  "domain": "education",
+  "name": "Remote Exam Proctoring Flagger",
+  "description": "Watches students' webcams during remote exams and flags suspected cheating behaviour for academic integrity review. Flagged students face a hearing; the model's flag is the main evidence presented.",
+  "owner": "Academic Integrity",
+  "data_classification": "personal data",
+  "deployment_context": "customer-facing",
+  "autonomy_level": "human-in-the-loop",
+  "documentation": "Processes video and biometric gaze data of students in their homes. No DPIA. No accuracy or false-positive rate has been measured. No analysis of whether flag rates differ by skin tone or disability. Students must consent to sit the exam, so consent is not freely given. A human panel reviews flags but is given no false-positive rate to weigh them against.",
+  "expect": {
+   "risk": [
+    "high",
+    "critical"
+   ],
+   "decision_not": [
+    "approve"
+   ],
+   "should_flag": [
+    "biometric data",
+    "no DPIA",
+    "no accuracy measurement",
+    "no fairness testing",
+    "coerced consent"
+   ],
+   "should_not_flag": []
+  }
+ },
+ {
+  "id": "N19",
+  "domain": "education",
+  "name": "Library Catalogue Semantic Search",
+  "description": "Improves search over the university's public library catalogue using semantic matching on titles and abstracts. No user profile is built and queries are not linked to individuals.",
+  "owner": "University Library",
+  "data_classification": "public",
+  "deployment_context": "customer-facing",
+  "autonomy_level": "human-on-the-loop",
+  "documentation": "Indexes only public bibliographic metadata. Queries are not logged against user identity. No personal data processed. In-Kingdom hosting.",
+  "expect": {
+   "risk": [
+    "low"
+   ],
+   "decision_not": [
+    "block"
+   ],
+   "should_flag": [],
+   "should_not_flag": [
+    "personal data",
+    "profiling"
+   ]
+  }
+ },
+ {
+  "id": "N20",
+  "domain": "customer_support",
+  "name": "Published FAQ Answer Bot",
+  "description": "Answers customer questions using only the company's published help-centre articles, and links the article it used. Escalates to a human whenever it has no matching article.",
+  "owner": "Support Operations",
+  "data_classification": "public",
+  "deployment_context": "customer-facing",
+  "autonomy_level": "human-on-the-loop",
+  "documentation": "Knowledge base is the already-public help centre. No customer personal data is used to generate answers. The bot states it is automated and offers a human handover on every turn. Conversations are stored without identifiers for 30 days for quality review. In-Kingdom hosting.",
+  "expect": {
+   "risk": [
+    "low"
+   ],
+   "decision_not": [
+    "block"
+   ],
+   "should_flag": [],
+   "should_not_flag": [
+    "no transparency",
+    "personal data",
+    "no human fallback"
+   ]
+  }
+ },
+ {
+  "id": "N21",
+  "domain": "customer_support",
+  "name": "Autonomous Refund Approver",
+  "description": "Approves or refuses refund requests up to SAR 5,000 automatically with no human review, including refusals on suspected-abuse grounds.",
+  "owner": "E-commerce Operations",
+  "data_classification": "personal data",
+  "deployment_context": "customer-facing",
+  "autonomy_level": "fully-autonomous",
+  "documentation": "Refusals are final within the automated channel and the customer is given a generic reason. There is no documented appeal path. Uses purchase history and a behavioural abuse score whose features are undocumented. No fairness review. No DPIA.",
+  "expect": {
+   "risk": [
+    "high",
+    "critical"
+   ],
+   "decision_not": [
+    "approve"
+   ],
+   "should_flag": [
+    "no human oversight",
+    "no appeal",
+    "opaque scoring",
+    "no DPIA"
+   ],
+   "should_not_flag": []
+  }
+ },
+ {
+  "id": "N22",
+  "domain": "customer_support",
+  "name": "Support Ticket Sentiment Tagger",
+  "description": "Tags incoming support tickets as positive, neutral or negative so managers can spot unhappy customers. Tags are advisory and do not change ticket priority automatically.",
+  "owner": "Support Operations",
+  "data_classification": "personal data",
+  "deployment_context": "internal-tool",
+  "autonomy_level": "human-on-the-loop",
+  "documentation": "Processes ticket text which may contain customer names. In-Kingdom. Tags are advisory only; agents can override and no routing changes automatically. Retention 90 days. Customers are told in the privacy notice that tickets are analysed automatically.",
+  "expect": {
+   "risk": [
+    "low",
+    "medium"
+   ],
+   "decision_not": [
+    "block"
+   ],
+   "should_flag": [],
+   "should_not_flag": [
+    "autonomous decision",
+    "no transparency"
+   ]
+  }
+ },
+ {
+  "id": "N23",
+  "domain": "customer_support",
+  "name": "Voice Cloning for IVR Greetings",
+  "description": "Clones a named voice actor's voice to generate new IVR greetings without re-recording sessions. The cloned voice is presented to callers as a human agent's voice.",
+  "owner": "Telephony Platform",
+  "data_classification": "internal",
+  "deployment_context": "customer-facing",
+  "autonomy_level": "human-on-the-loop",
+  "documentation": "The voice actor signed a general recording release five years ago that does not mention synthetic voice cloning. Callers are not told the voice is synthetic. No watermarking or disclosure of synthetic audio. No consent refresh was sought.",
+  "expect": {
+   "risk": [
+    "high",
+    "critical"
+   ],
+   "decision_not": [
+    "approve"
+   ],
+   "should_flag": [
+    "synthetic media disclosure",
+    "consent not covering cloning",
+    "no watermarking"
+   ],
+   "should_not_flag": []
+  }
+ },
+ {
+  "id": "N24",
+  "domain": "cybersecurity",
+  "name": "Phishing Email Classifier",
+  "description": "Classifies inbound email as phishing and quarantines it for a security analyst to release. Users can request a release and an analyst decides within an hour.",
+  "owner": "Security Operations",
+  "data_classification": "confidential",
+  "deployment_context": "internal-tool",
+  "autonomy_level": "human-in-the-loop",
+  "documentation": "Processes employee email metadata and body text, in-Kingdom. False-positive rate measured monthly and reported at 0.4%. Release path documented and staffed. Audit log of quarantines retained 2 years. Employees informed via the acceptable use policy.",
+  "expect": {
+   "risk": [
+    "medium"
+   ],
+   "decision_not": [
+    "block"
+   ],
+   "should_flag": [],
+   "should_not_flag": [
+    "no redress",
+    "no monitoring",
+    "no transparency"
+   ]
+  }
+ },
+ {
+  "id": "N25",
+  "domain": "cybersecurity",
+  "name": "Autonomous Endpoint Isolation Agent",
+  "description": "Detects suspected compromise and disconnects the affected employee endpoint from the network automatically, with no analyst confirmation, including on production servers.",
+  "owner": "Security Operations",
+  "data_classification": "confidential",
+  "deployment_context": "internal-tool",
+  "autonomy_level": "fully-autonomous",
+  "documentation": "Acts without analyst confirmation and can isolate production servers. No documented rollback procedure and no blast-radius limit. False-positive rate has not been measured. No change-management or abort mechanism. Isolation events are logged but not reviewed.",
+  "expect": {
+   "risk": [
+    "high",
+    "critical"
+   ],
+   "decision_not": [
+    "approve"
+   ],
+   "should_flag": [
+    "no human oversight",
+    "no abort mechanism",
+    "no false-positive measurement",
+    "operational risk"
+   ],
+   "should_not_flag": []
+  }
+ },
+ {
+  "id": "N26",
+  "domain": "cybersecurity",
+  "name": "Vulnerability Report Prioritiser",
+  "description": "Orders the vulnerability backlog by exploitability so engineers fix the riskiest first. Only reorders a backlog; engineers decide what to fix.",
+  "owner": "Product Security",
+  "data_classification": "internal",
+  "deployment_context": "internal-tool",
+  "autonomy_level": "human-on-the-loop",
+  "documentation": "Uses internal scanner output and public CVE data. No personal data. In-Kingdom. Engineers review and can reorder. Ranking rationale shown per item. No automated remediation.",
+  "expect": {
+   "risk": [
+    "low"
+   ],
+   "decision_not": [
+    "block"
+   ],
+   "should_flag": [],
+   "should_not_flag": [
+    "personal data",
+    "autonomous action"
+   ]
+  }
+ },
+ {
+  "id": "N27",
+  "domain": "cybersecurity",
+  "name": "Insider Threat Behaviour Profiler",
+  "description": "Builds a continuous risk profile of every employee from file access, email and badge-in data, and escalates high scorers to HR investigation.",
+  "owner": "Insider Risk",
+  "data_classification": "personal data",
+  "deployment_context": "internal-tool",
+  "autonomy_level": "human-on-the-loop",
+  "documentation": "Profiles all employees continuously without their knowledge. Escalations trigger HR investigation. No DPIA, no proportionality assessment. Employees cannot see or contest their score. No fairness testing on escalation rates by nationality or role.",
+  "expect": {
+   "risk": [
+    "high",
+    "critical"
+   ],
+   "decision_not": [
+    "approve"
+   ],
+   "should_flag": [
+    "covert profiling",
+    "no DPIA",
+    "no redress",
+    "no fairness testing"
+   ],
+   "should_not_flag": []
+  }
+ },
+ {
+  "id": "N28",
+  "domain": "retail",
+  "name": "Shelf Stock Gap Detector",
+  "description": "Uses ceiling cameras pointed at shelves to spot empty shelf space and alert staff to restock. Cameras are framed on shelves only and faces are blurred at capture.",
+  "owner": "Store Operations",
+  "data_classification": "internal",
+  "deployment_context": "internal-tool",
+  "autonomy_level": "human-on-the-loop",
+  "documentation": "Cameras are framed at shelf level; on-device face blurring is applied before any frame is stored. No customer identification and no biometric matching. In-Kingdom processing. Signage informs customers cameras operate for stock management. Frames retained 24 hours.",
+  "expect": {
+   "risk": [
+    "low",
+    "medium"
+   ],
+   "decision_not": [
+    "block"
+   ],
+   "should_flag": [],
+   "should_not_flag": [
+    "biometric identification",
+    "no signage"
+   ]
+  }
+ },
+ {
+  "id": "N29",
+  "domain": "retail",
+  "name": "In-Store Face Recognition Blacklist",
+  "description": "Matches every entering shopper's face against a store-built list of suspected shoplifters and alerts security to approach them.",
+  "owner": "Loss Prevention",
+  "data_classification": "personal data",
+  "deployment_context": "customer-facing",
+  "autonomy_level": "human-on-the-loop",
+  "documentation": "Biometric matching of all entering shoppers against an internally compiled suspect list. No judicial or regulatory basis for the list. No consent obtained. No DPIA. No measured false-match rate, and no analysis of whether false matches differ across demographics. No route for a person to know they are listed or to be removed.",
+  "expect": {
+   "risk": [
+    "critical"
+   ],
+   "decision_not": [
+    "approve"
+   ],
+   "should_flag": [
+    "biometric processing",
+    "no consent",
+    "no DPIA",
+    "no false-match measurement",
+    "no redress"
+   ],
+   "should_not_flag": []
+  }
+ },
+ {
+  "id": "N30",
+  "domain": "retail",
+  "name": "Demand Forecast for Reordering",
+  "description": "Forecasts SKU-level demand from historical sales to generate purchase order suggestions a buyer approves.",
+  "owner": "Supply Chain",
+  "data_classification": "internal",
+  "deployment_context": "internal-tool",
+  "autonomy_level": "human-in-the-loop",
+  "documentation": "Uses aggregate SKU sales with no customer identifiers. A buyer approves every purchase order. In-Kingdom. Forecast error tracked monthly. No personal data.",
+  "expect": {
+   "risk": [
+    "low"
+   ],
+   "decision_not": [
+    "block"
+   ],
+   "should_flag": [],
+   "should_not_flag": [
+    "personal data",
+    "autonomous decision"
+   ]
+  }
+ },
+ {
+  "id": "N31",
+  "domain": "retail",
+  "name": "Personalised Dynamic Pricing",
+  "description": "Sets a different price for the same product per shopper based on inferred willingness to pay, including device type, browsing history and inferred income bracket.",
+  "owner": "Pricing",
+  "data_classification": "personal data",
+  "deployment_context": "customer-facing",
+  "autonomy_level": "fully-autonomous",
+  "documentation": "Infers income bracket from postcode and device. Shoppers are not told prices are personalised. No fairness assessment on whether protected groups systematically pay more. No DPIA. No opt-out.",
+  "expect": {
+   "risk": [
+    "high",
+    "critical"
+   ],
+   "decision_not": [
+    "approve"
+   ],
+   "should_flag": [
+    "no transparency",
+    "proxy for protected attributes",
+    "no fairness assessment",
+    "no DPIA",
+    "no opt-out"
+   ],
+   "should_not_flag": []
+  }
+ },
+ {
+  "id": "N32",
+  "domain": "manufacturing",
+  "name": "Weld Defect Visual Inspector",
+  "description": "Inspects weld images on the line and diverts suspect parts to a manual inspection station. A human inspector makes the scrap decision.",
+  "owner": "Quality Engineering",
+  "data_classification": "internal",
+  "deployment_context": "internal-tool",
+  "autonomy_level": "human-in-the-loop",
+  "documentation": "Images of parts only; no personal data. In-Kingdom. Validated at 98.1% recall on a 3,000-image held-out set; performance monitored weekly. Human inspector decides scrap or rework. Full traceability per part retained 10 years.",
+  "expect": {
+   "risk": [
+    "low",
+    "medium"
+   ],
+   "decision_not": [
+    "block"
+   ],
+   "should_flag": [],
+   "should_not_flag": [
+    "personal data",
+    "no validation",
+    "no human oversight"
+   ]
+  }
+ },
+ {
+  "id": "N33",
+  "domain": "manufacturing",
+  "name": "Autonomous Furnace Setpoint Controller",
+  "description": "Adjusts furnace temperature setpoints autonomously to optimise yield, with authority to move outside the documented safe operating envelope if the model predicts a yield gain.",
+  "owner": "Process Control",
+  "data_classification": "internal",
+  "deployment_context": "internal-tool",
+  "autonomy_level": "fully-autonomous",
+  "documentation": "The agent may exceed the documented safe operating envelope. No hard interlock or engineering override was implemented. No safety case or HAZOP review was performed for autonomous operation. No abort path documented. Operators are not alerted to setpoint changes.",
+  "expect": {
+   "risk": [
+    "critical"
+   ],
+   "decision_not": [
+    "approve"
+   ],
+   "should_flag": [
+    "safety envelope breach",
+    "no interlock",
+    "no safety case",
+    "no human oversight"
+   ],
+   "should_not_flag": []
+  }
+ },
+ {
+  "id": "N34",
+  "domain": "manufacturing",
+  "name": "Predictive Maintenance Scheduler",
+  "description": "Predicts bearing failure from vibration sensors and raises a maintenance work order for a planner to schedule.",
+  "owner": "Reliability Engineering",
+  "data_classification": "internal",
+  "deployment_context": "internal-tool",
+  "autonomy_level": "human-in-the-loop",
+  "documentation": "Sensor data only, no personal data. In-Kingdom. A planner approves each work order. Model precision and recall tracked quarterly and documented. No autonomous plant action.",
+  "expect": {
+   "risk": [
+    "low"
+   ],
+   "decision_not": [
+    "block"
+   ],
+   "should_flag": [],
+   "should_not_flag": [
+    "personal data",
+    "autonomous action"
+   ]
+  }
+ },
+ {
+  "id": "N35",
+  "domain": "smart_cities",
+  "name": "Traffic Signal Timing Optimiser",
+  "description": "Adjusts traffic light timings from inductive loop vehicle counts to reduce congestion, within timing bounds set by traffic engineers.",
+  "owner": "City Traffic Authority",
+  "data_classification": "public",
+  "deployment_context": "internal-tool",
+  "autonomy_level": "human-on-the-loop",
+  "documentation": "Uses anonymous vehicle counts from inductive loops; no cameras, no plates, no personal data. Operates strictly within engineer-set timing bounds with a hard fallback to fixed timings. In-Kingdom. Engineers review weekly.",
+  "expect": {
+   "risk": [
+    "low",
+    "medium"
+   ],
+   "decision_not": [
+    "block"
+   ],
+   "should_flag": [],
+   "should_not_flag": [
+    "personal data",
+    "no bounds",
+    "no fallback"
+   ]
+  }
+ },
+ {
+  "id": "N36",
+  "domain": "smart_cities",
+  "name": "Public Space Crowd Face Analytics",
+  "description": "Analyses public square camera feeds to estimate crowd demographics by age, gender and ethnicity for urban planning reports.",
+  "owner": "Urban Planning",
+  "data_classification": "personal data",
+  "deployment_context": "customer-facing",
+  "autonomy_level": "human-on-the-loop",
+  "documentation": "Infers ethnicity, age and gender from faces of members of the public in public spaces. No consent is obtained and no signage exists. No DPIA. No accuracy assessment of the demographic inference, which is known to be unreliable across groups. No retention limit defined.",
+  "expect": {
+   "risk": [
+    "critical"
+   ],
+   "decision_not": [
+    "approve"
+   ],
+   "should_flag": [
+    "biometric inference",
+    "ethnicity inference",
+    "no consent",
+    "no DPIA",
+    "no retention limit"
+   ],
+   "should_not_flag": []
+  }
+ },
+ {
+  "id": "N37",
+  "domain": "smart_cities",
+  "name": "Waste Collection Route Planner",
+  "description": "Plans refuse truck routes from bin fill-level sensors to cut mileage. Route plans are approved by a depot supervisor each morning.",
+  "owner": "Municipal Waste",
+  "data_classification": "internal",
+  "deployment_context": "internal-tool",
+  "autonomy_level": "human-in-the-loop",
+  "documentation": "Bin sensor fill levels and road network data only. No personal data. In-Kingdom. Supervisor approves each day's routes. No decision about any individual.",
+  "expect": {
+   "risk": [
+    "low"
+   ],
+   "decision_not": [
+    "block"
+   ],
+   "should_flag": [],
+   "should_not_flag": [
+    "personal data"
+   ]
+  }
+ },
+ {
+  "id": "N38",
+  "domain": "smart_cities",
+  "name": "Predictive Policing Patrol Allocator",
+  "description": "Predicts which neighbourhoods will see crime and directs police patrol allocation accordingly, using historical arrest records.",
+  "owner": "Public Safety Analytics",
+  "data_classification": "restricted",
+  "deployment_context": "internal-tool",
+  "autonomy_level": "human-on-the-loop",
+  "documentation": "Trained on historical arrest data, which reflects past enforcement patterns rather than crime incidence. No assessment of feedback loops or of disparate impact on particular neighbourhoods. No DPIA. No community consultation. No mechanism to audit whether predictions became self-fulfilling.",
+  "expect": {
+   "risk": [
+    "critical"
+   ],
+   "decision_not": [
+    "approve"
+   ],
+   "should_flag": [
+    "historical bias",
+    "feedback loop",
+    "no DPIA",
+    "disparate impact",
+    "no oversight"
+   ],
+   "should_not_flag": []
+  }
+ },
+ {
+  "id": "N39",
+  "domain": "internal_productivity",
+  "name": "Meeting Action Item Extractor",
+  "description": "Extracts action items from internal meeting notes that employees paste in. The note author reviews and edits the extracted list before circulating it.",
+  "owner": "Internal Tools",
+  "data_classification": "internal",
+  "deployment_context": "internal-tool",
+  "autonomy_level": "human-in-the-loop",
+  "documentation": "Internal notes only, authored by employees; colleague names may appear. In-Kingdom hosting. Author reviews and edits every output before it goes anywhere. No writes to any system of record. Retention 90 days. SSO-restricted to the team.",
+  "expect": {
+   "risk": [
+    "low"
+   ],
+   "decision_not": [
+    "block"
+   ],
+   "should_flag": [],
+   "should_not_flag": [
+    "customer data",
+    "cross-border",
+    "autonomous action"
+   ]
+  }
+ },
+ {
+  "id": "N40",
+  "domain": "internal_productivity",
+  "name": "Code Review Assistant",
+  "description": "Comments on internal pull requests suggesting improvements. Engineers accept or ignore suggestions; the assistant cannot merge or approve.",
+  "owner": "Developer Experience",
+  "data_classification": "confidential",
+  "deployment_context": "internal-tool",
+  "autonomy_level": "human-in-the-loop",
+  "documentation": "Proprietary source code is sent to a commercial model API under a signed enterprise agreement with no-training terms confirmed in writing. Cannot merge or approve. In-Kingdom gateway with the vendor's regional endpoint. Data handling reviewed by security. Suggestions logged for 30 days.",
+  "expect": {
+   "risk": [
+    "medium"
+   ],
+   "decision_not": [
+    "block"
+   ],
+   "should_flag": [],
+   "should_not_flag": [
+    "no agreement",
+    "training on data",
+    "autonomous merge"
+   ]
+  }
+ },
+ {
+  "id": "N41",
+  "domain": "internal_productivity",
+  "name": "Unvetted Shadow AI Document Summariser",
+  "description": "Employees paste internal documents, including unreleased financial results and HR files, into a free public chatbot to summarise them. Adopted informally with no review.",
+  "owner": "Various Teams",
+  "data_classification": "confidential",
+  "deployment_context": "internal-tool",
+  "autonomy_level": "human-on-the-loop",
+  "documentation": "No contract, no data processing agreement and no security review exist. The free tier's terms permit using submitted content for model training. Confidential and personal data including HR files has already been pasted in. No inventory of what was shared. No approval was sought.",
+  "expect": {
+   "risk": [
+    "high",
+    "critical"
+   ],
+   "decision_not": [
+    "approve"
+   ],
+   "should_flag": [
+    "no agreement",
+    "training on confidential data",
+    "no security review",
+    "shadow IT",
+    "cross-border"
+   ],
+   "should_not_flag": []
+  }
+ },
+ {
+  "id": "N42",
+  "domain": "internal_productivity",
+  "name": "Internal Wiki Semantic Search",
+  "description": "Semantic search across the internal wiki, respecting each page's existing access permissions so results never reveal pages a user cannot already open.",
+  "owner": "Knowledge Management",
+  "data_classification": "internal",
+  "deployment_context": "internal-tool",
+  "autonomy_level": "human-on-the-loop",
+  "documentation": "Index respects source page ACLs and was tested for permission leakage. In-Kingdom. No personal data beyond author names. No decisions made. Query logs anonymised after 7 days.",
+  "expect": {
+   "risk": [
+    "low"
+   ],
+   "decision_not": [
+    "block"
+   ],
+   "should_flag": [],
+   "should_not_flag": [
+    "permission leakage",
+    "personal data"
+   ]
+  }
+ },
+ {
+  "id": "N43",
+  "domain": "cross_border",
+  "name": "Global HR Analytics Warehouse",
+  "description": "Replicates all Saudi employee HR records to a group analytics warehouse in Ireland for workforce reporting across the international group.",
+  "owner": "Group HR Analytics",
+  "data_classification": "personal data",
+  "deployment_context": "internal-tool",
+  "autonomy_level": "human-on-the-loop",
+  "documentation": "Full employee records including salary, nationality, performance ratings and health absence reasons are replicated to Ireland. No transfer impact assessment and no SDAIA/PDPL transfer approval. Employees were not notified of the transfer. No data minimisation was applied before replication.",
+  "expect": {
+   "risk": [
+    "high",
+    "critical"
+   ],
+   "decision_not": [
+    "approve"
+   ],
+   "should_flag": [
+    "cross-border transfer",
+    "no transfer assessment",
+    "no notification",
+    "no minimisation",
+    "sensitive data"
+   ],
+   "should_not_flag": []
+  }
+ },
+ {
+  "id": "N44",
+  "domain": "cross_border",
+  "name": "Regional Chatbot with In-Kingdom Residency",
+  "description": "A customer chatbot serving several Gulf markets where each market's conversation data is pinned to in-country storage and never leaves its jurisdiction.",
+  "owner": "Regional Digital",
+  "data_classification": "personal data",
+  "deployment_context": "customer-facing",
+  "autonomy_level": "human-on-the-loop",
+  "documentation": "Data residency enforced per market with Saudi data stored in-Kingdom only; verified by an architecture review and an annual audit. A signed data processing agreement is in place with the model vendor including no-training terms. Customers are told they are talking to an automated assistant and can reach a human. Retention 60 days.",
+  "expect": {
+   "risk": [
+    "medium"
+   ],
+   "decision_not": [
+    "block"
+   ],
+   "should_flag": [],
+   "should_not_flag": [
+    "cross-border transfer",
+    "no agreement",
+    "no transparency"
+   ]
+  }
+ },
+ {
+  "id": "N45",
+  "domain": "cross_border",
+  "name": "Offshore Model Fine-Tuning on Customer Chats",
+  "description": "Exports two years of Saudi customer chat transcripts to a US affiliate to fine-tune a shared model used across all group markets.",
+  "owner": "Group Data Science",
+  "data_classification": "personal data",
+  "deployment_context": "internal-tool",
+  "autonomy_level": "human-on-the-loop",
+  "documentation": "Transcripts contain names, phone numbers and order details. Exported to the United States. No transfer impact assessment, no adequacy basis and no regulator approval. Customers never consented to their conversations being used for model training. No de-identification was applied before export.",
+  "expect": {
+   "risk": [
+    "critical"
+   ],
+   "decision_not": [
+    "approve"
+   ],
+   "should_flag": [
+    "cross-border transfer",
+    "no consent for training",
+    "no de-identification",
+    "no transfer assessment"
+   ],
+   "should_not_flag": []
+  }
+ },
+ {
+  "id": "N46",
+  "domain": "personal_data",
+  "name": "Consent-Based Marketing Segmenter",
+  "description": "Segments customers for marketing emails using only data from customers who gave explicit marketing consent, with one-click withdrawal honoured immediately.",
+  "owner": "CRM",
+  "data_classification": "personal data",
+  "deployment_context": "internal-tool",
+  "autonomy_level": "human-on-the-loop",
+  "documentation": "Explicit opt-in consent recorded per customer with timestamp and scope. Withdrawal honoured within minutes and tested. Only purchase history and stated preferences used; no inferred sensitive attributes. In-Kingdom. DPIA completed and on file. Retention tied to consent.",
+  "expect": {
+   "risk": [
+    "low",
+    "medium"
+   ],
+   "decision_not": [
+    "block"
+   ],
+   "should_flag": [],
+   "should_not_flag": [
+    "no consent",
+    "no DPIA",
+    "sensitive inference"
+   ]
+  }
+ },
+ {
+  "id": "N47",
+  "domain": "personal_data",
+  "name": "Health Inference from Shopping Baskets",
+  "description": "Infers likely pregnancy and chronic health conditions from grocery purchase patterns to target promotions.",
+  "owner": "Category Marketing",
+  "data_classification": "personal data",
+  "deployment_context": "internal-tool",
+  "autonomy_level": "human-on-the-loop",
+  "documentation": "Derives health and pregnancy status, which are sensitive categories, from non-health data. Customers consented only to general loyalty analytics, not health inference. No DPIA. No accuracy measurement of the inference. Promotions revealing an inferred pregnancy have already been sent to shared household addresses.",
+  "expect": {
+   "risk": [
+    "high",
+    "critical"
+   ],
+   "decision_not": [
+    "approve"
+   ],
+   "should_flag": [
+    "sensitive inference",
+    "consent scope exceeded",
+    "no DPIA",
+    "privacy harm"
+   ],
+   "should_not_flag": []
+  }
+ },
+ {
+  "id": "N48",
+  "domain": "public_information",
+  "name": "Open Data Portal Chat Interface",
+  "description": "A chat interface over the government open data portal that answers questions using only published open datasets and cites the dataset used.",
+  "owner": "Open Data Office",
+  "data_classification": "public",
+  "deployment_context": "customer-facing",
+  "autonomy_level": "human-on-the-loop",
+  "documentation": "Only already-published open datasets are indexed. No personal data. Every answer cites the dataset and links it. Users are told answers are generated. In-Kingdom. No profiling of users.",
+  "expect": {
+   "risk": [
+    "low"
+   ],
+   "decision_not": [
+    "block"
+   ],
+   "should_flag": [],
+   "should_not_flag": [
+    "personal data",
+    "no transparency",
+    "no citation"
+   ]
+  }
+ },
+ {
+  "id": "N49",
+  "domain": "high_risk",
+  "name": "Autonomous Drone Delivery Route Authoriser",
+  "description": "Authorises and dispatches delivery drone flights over populated urban areas autonomously, choosing routes without a human dispatcher approving each flight.",
+  "owner": "Logistics Innovation",
+  "data_classification": "internal",
+  "deployment_context": "customer-facing",
+  "autonomy_level": "fully-autonomous",
+  "documentation": "Flights over populated areas are authorised without human approval. No aviation regulator approval has been obtained for autonomous authorisation. No documented safety case, no geofencing of sensitive sites, and no emergency abort procedure. Third-party injury risk has not been assessed.",
+  "expect": {
+   "risk": [
+    "critical"
+   ],
+   "decision_not": [
+    "approve"
+   ],
+   "should_flag": [
+    "no human oversight",
+    "no regulatory approval",
+    "no safety case",
+    "physical safety risk",
+    "no abort"
+   ],
+   "should_not_flag": []
+  }
+ },
+ {
+  "id": "N50",
+  "domain": "low_risk",
+  "name": "Internal Cafeteria Menu Translator",
+  "description": "Translates the staff cafeteria's daily menu from Arabic to English for the internal noticeboard. A facilities coordinator proofreads each translation.",
+  "owner": "Facilities",
+  "data_classification": "public",
+  "deployment_context": "internal-tool",
+  "autonomy_level": "human-in-the-loop",
+  "documentation": "Menu text only. No personal data of any kind. A coordinator proofreads before posting. In-Kingdom. No decision about any person. Nothing retained beyond the current day's menu.",
+  "expect": {
+   "risk": [
+    "low"
+   ],
+   "decision_not": [
+    "block",
+    "require_human_approval"
+   ],
+   "should_flag": [],
+   "should_not_flag": [
+    "personal data",
+    "cross-border",
+    "consequential decision"
+   ]
+  }
+ }
+]

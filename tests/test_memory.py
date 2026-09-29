@@ -281,7 +281,7 @@ def test_memory_failures_never_raise_and_are_logged(monkeypatch, fake_embeddings
     monkeypatch.setattr("app.db.update", boom)
     monkeypatch.setattr("app.db.select", boom)
 
-    with caplog.at_level(logging.WARNING, logger="app.memory"):
+    with caplog.at_level(logging.WARNING, logger="governai.memory"):
         assert memory.remember_case(report) is False
         assert memory.update_case_outcome(report) is False
         assert memory.retrieve_similar_cases(_use_case(**CREDIT)) == []
