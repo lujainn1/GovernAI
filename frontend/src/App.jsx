@@ -149,7 +149,7 @@ function AppShell({ user, onSignOut }) {
           </div>
           <div className="agents-online-note">
             {health
-              ? `${health.status} · 6 agent runs in 24h`
+              ? `${health.status} · 5 agent runs in 24h`
               : 'Health unavailable'}
           </div>
         </div>

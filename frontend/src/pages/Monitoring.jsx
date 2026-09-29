@@ -49,7 +49,7 @@ function HealthBanner({ health }) {
       <div className="mon-banner-head">
         <span className={`pill pill-${tone}`}>{health.status}</span>
         <span className="mon-banner-title">
-          System health · 6 agent runs, {pct(health.summary.success_rate)} succeeded
+          System health · 5 agent runs, {pct(health.summary.success_rate)} succeeded
         </span>
       </div>
 

@@ -22,3 +22,6 @@ data/vectorstore/
 # VS Code workspace files
 *.code-workspace
 .venv.zip
+
+# Demo pre-seed run output (regenerated locally)
+demo/seed-output/

@@ -45,6 +45,13 @@ DEEPSEEK_MAX_RETRIES = int(os.environ.get("DEEPSEEK_MAX_RETRIES", "1"))
 
 MAX_TOOL_ITERATIONS = int(os.environ.get("GOVERNAI_MAX_TOOL_ITERATIONS", "10"))
 
+# How many times an agent may be handed its own unusable answer back to
+# correct - valid JSON that dropped a required field, or output that could not
+# be parsed as JSON at all. Counted separately from MAX_TOOL_ITERATIONS so a
+# model that keeps answering badly can't eat the tool budget. 0 disables
+# repairs: the first AgentError raises.
+MAX_SCHEMA_REPAIRS = int(os.environ.get("GOVERNAI_MAX_SCHEMA_REPAIRS", "1"))
+
 # How many times the Review Agent may send the Decision Agent back for a
 # revision before the orchestrator gives up on convergence. 0 keeps the
 # review (and its audit entry) but never re-runs the Decision Agent.

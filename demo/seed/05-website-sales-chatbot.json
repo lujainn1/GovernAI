@@ -1,0 +1,9 @@
+{
+  "name": "Website Sales Chatbot",
+  "description": "Public website chatbot that answers product questions and collects visitors' names, email addresses, and phone numbers to schedule sales calls. Powered by a third-party LLM API.",
+  "owner": "marketing",
+  "data_classification": "confidential",
+  "deployment_context": "customer-facing",
+  "autonomy_level": "human-on-the-loop",
+  "documentation": "Contact details are stored in the CRM. No retention period has been defined. Visitors are not told that they are talking to an AI."
+}

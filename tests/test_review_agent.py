@@ -142,6 +142,48 @@ def test_review_can_call_get_policies_to_verify_cited_policies(monkeypatch):
     assert "POL-003" in tool_messages[0]["content"]
 
 
+def test_review_missing_rationale_is_repaired_not_fatal(monkeypatch):
+    """The real failure: the reviewer returned verdict/issues/suggestions and no
+    `rationale`, which is required, and the AgentError took down the whole
+    submission with a 502. It is now handed back for one correction."""
+    dropped = json.dumps(
+        {
+            "verdict": "needs_revision",
+            "issues": ["the conditions are not tied to the violated policy"],
+            "suggestions": ["cite POL-003 when explaining the conditions."],
+        }
+    )
+    repaired = json.dumps(
+        {
+            "verdict": "needs_revision",
+            "issues": ["the conditions are not tied to the violated policy"],
+            "suggestions": ["cite POL-003 when explaining the conditions."],
+            "rationale": "the decision cannot be acted on without naming the policy",
+        }
+    )
+    fake_client = FakeClient([_completion(content=dropped), _completion(content=repaired)])
+    monkeypatch.setattr("app.agents.base.get_client", lambda: fake_client)
+
+    decision = DecisionResult(decision=Decision.BLOCK, conditions=["fix it"], rationale="high risk")
+    agent = ReviewAgent()
+    result = agent.review(_use_case(), _risk(), _compliance(), decision)
+
+    assert isinstance(result, ReviewResult)
+    assert result.verdict == ReviewVerdict.NEEDS_REVISION
+    assert result.rationale
+    assert result.issues == ["the conditions are not tied to the violated policy"]
+    assert agent.last_trace["schema_repairs"] == 1
+    assert "rationale" in fake_client.calls[1]["messages"][-1]["content"]
+
+
+def test_review_prompt_asks_for_a_rationale():
+    """The prompt named verdict, issues and suggestions but never rationale,
+    which is why this agent in particular kept dropping it."""
+    from app.agents.review_agent import SYSTEM_PROMPT
+
+    assert "rationale" in SYSTEM_PROMPT.lower()
+
+
 # --- Decision Agent revision input -----------------------------------------
 
 

@@ -1,0 +1,9 @@
+{
+  "name": "Automated Loan Decision Agent",
+  "description": "Fully autonomous agent that approves or denies consumer loan applications and sends the decision to the applicant. No human reviews denials and there is no appeal process. It uses applicants' credit score, income, and bank account data.",
+  "owner": "retail-lending",
+  "data_classification": "restricted",
+  "deployment_context": "customer-facing",
+  "autonomy_level": "fully-autonomous",
+  "documentation": "The credit model is a third-party scoring API whose data-handling terms have not been reviewed by legal and for which no data processing agreement is signed. Denials are final and executed automatically, with no appeal channel. Applicant data is retained indefinitely. No bias or fairness testing has been performed and no fairness metrics are defined."
+}

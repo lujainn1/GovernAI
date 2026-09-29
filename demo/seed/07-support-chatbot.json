@@ -1,0 +1,9 @@
+{
+  "name": "Customer Support Chatbot",
+  "description": "Customer-facing chatbot that answers billing questions using customers' names, email addresses, and account balances. Powered by a third-party LLM API.",
+  "owner": "customer-support",
+  "data_classification": "confidential",
+  "deployment_context": "customer-facing",
+  "autonomy_level": "human-on-the-loop",
+  "documentation": "Conversation transcripts are retained for 12 months and then deleted. Data is encrypted in transit and at rest. The vendor is documented under a signed data processing agreement. Customers are told that they are chatting with an AI assistant and can ask for a human agent at any time."
+}

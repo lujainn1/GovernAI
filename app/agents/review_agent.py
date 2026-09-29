@@ -103,6 +103,10 @@ fetch only the area you are checking, and look up only the policies the \
 findings actually cite. One or two lookups is normally enough; do not fetch \
 the repository again if you already have what you need.
 
+Always include a "rationale" explaining your verdict - for both verdicts, \
+whether you signed off or sent it back. It is required, it is what a human \
+reviewer reads first, and it is recorded in the audit trail.
+
 Your feedback is applied by re-running only the Decision Agent, so phrase \
 issues in terms of the decision, its conditions and its rationale. If you \
 believe an upstream risk or compliance finding is wrong, name the finding \

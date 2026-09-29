@@ -1,0 +1,9 @@
+{
+  "name": "Automated Resume Screening",
+  "description": "Ranks job applicants and automatically rejects candidates below a score threshold before any recruiter sees them. Inputs are CV text, names, photos, and graduation year.",
+  "owner": "talent-acquisition",
+  "data_classification": "confidential",
+  "deployment_context": "internal-tool",
+  "autonomy_level": "human-on-the-loop",
+  "documentation": "Recruiters only review the top-ranked 10% of candidates. Rejected applicants are notified automatically. No bias or fairness testing has been performed. The ranking model is hosted by a third-party vendor."
+}

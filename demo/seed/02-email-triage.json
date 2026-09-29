@@ -1,0 +1,9 @@
+{
+  "name": "Customer Email Triage Assistant",
+  "description": "Classifies incoming customer support emails and drafts suggested replies. Agents review and send every reply; the assistant cannot send email or change customer records.",
+  "owner": "customer-support",
+  "data_classification": "confidential",
+  "deployment_context": "internal-tool",
+  "autonomy_level": "human-in-the-loop",
+  "documentation": "Emails contain names and contact details. Data is encrypted at rest and in transit. Emails are retained for 12 months on a documented lawful basis and then deleted. The vendor is documented and a data processing agreement is signed. Access uses least-privilege read-only permissions. All requests and agent edits are audit-logged. Customers are informed that AI assists with replies. A monthly review checks accuracy and bias."
+}

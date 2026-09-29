@@ -1,0 +1,9 @@
+{
+  "name": "Citizen Services Assistant",
+  "description": "Government chatbot that answers citizens' questions about their service applications. It sends each citizen's national ID number, address, and application history to a large language model hosted by a provider in another country.",
+  "owner": "digital-government-office",
+  "data_classification": "restricted",
+  "deployment_context": "customer-facing",
+  "autonomy_level": "human-on-the-loop",
+  "documentation": "Requests are processed on the provider's overseas servers. No transfer risk assessment has been carried out and no contract clauses cover the provider's handling of personal data."
+}

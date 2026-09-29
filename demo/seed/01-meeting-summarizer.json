@@ -1,0 +1,9 @@
+{
+  "name": "Internal Meeting Notes Summarizer",
+  "description": "Summarizes meeting transcripts for internal staff. Only public or internal-classified transcripts are used; no personal, health, or financial data is processed. A human owner reviews every summary before it is shared.",
+  "owner": "knowledge-management",
+  "data_classification": "internal",
+  "deployment_context": "internal-tool",
+  "autonomy_level": "human-on-the-loop",
+  "documentation": "Transcripts are stored in the company wiki and sent to a documented vendor LLM under an approved data processing agreement. No personal data is collected. Transcripts are deleted after 90 days on a documented retention schedule. Every request is written to an audit log retained for one year. Users are told that summaries are AI-generated and a human owner approves each summary before it is shared."
+}

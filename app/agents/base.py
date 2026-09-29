@@ -25,7 +25,7 @@ ResponseModel = TypeVar("ResponseModel", bound=BaseModel)
 
 logger = logging.getLogger("governai.agent")
 
-_JSON_BLOCK_RE = re.compile(r"\{.*\}", re.DOTALL)
+_JSON_DECODER = json.JSONDecoder()
 _ERROR_PREVIEW_CHARS = 500
 _OUTPUT_PREVIEW_CHARS = 120
 
@@ -54,25 +54,32 @@ def _extract_json(content: str) -> Dict[str, Any]:
             return parsed
     except json.JSONDecodeError:
         pass
-
-    # A model sometimes emits a complete object and then keeps talking, which
-    # json.loads rejects as "Extra data". raw_decode reads the first value and
-    # ignores the rest, which is the answer that was asked for.
-    try:
-        decoded, _ = json.JSONDecoder().raw_decode(content)
-        if isinstance(decoded, dict):
-            return decoded
-    except json.JSONDecodeError:
-        pass
-
-    match = _JSON_BLOCK_RE.search(content)
-    if match:
+    # The model wrapped its JSON in prose, or emitted something after it.
+    # Decode the first complete object rather than spanning from the first
+    # "{" to the last "}": that span swallows any trailing text (and any
+    # second object), and json.loads then rejects the whole thing as
+    # "Extra data". Candidate starts that turn out to be prose - "the set
+    # {a, b}" - simply fail to decode, so keep trying the later ones.
+    for start in (i for i, char in enumerate(content) if char == "{"):
         try:
-            return json.loads(match.group(0))
+            data, _ = _JSON_DECODER.raw_decode(content, start)
         except json.JSONDecodeError:
-            pass
+            continue
+        if isinstance(data, dict):
+            return data
     # Only a short preview: this message is persisted with the agent run.
     raise AgentError(f"Could not parse a JSON object out of model output: {content[:_OUTPUT_PREVIEW_CHARS]!r}")
+
+
+def _describe_validation_error(exc: ValidationError) -> str:
+    """One line per problem, naming the field and what was wrong with it, so
+    the model is told precisely what to fix instead of being handed the whole
+    pydantic dump (which quotes its own input back at it)."""
+    lines = []
+    for err in exc.errors():
+        location = ".".join(str(part) for part in err["loc"]) or "(root)"
+        lines.append(f"- {location}: {err['msg']}")
+    return "\n".join(lines)
 
 
 def _new_trace(model: Optional[str] = None) -> Dict[str, Any]:
@@ -86,6 +93,7 @@ def _new_trace(model: Optional[str] = None) -> Dict[str, Any]:
         "total_tokens": 0,
         "steps": [],  # ordered llm / tool steps, each with its own latency
         "tool_calls": [],
+        "schema_repairs": 0,  # times the model was asked to fix its own answer
         "error": None,  # {"type", "message"} if run() raised
     }
 
@@ -186,10 +194,18 @@ class BaseAgent:
         ]
 
         # One structured-output repair per run (see the final-answer branch).
-        repair_attempted = False
 
         for _ in range(max_tool_iterations):
-            kwargs: Dict[str, Any] = {"model": self.model, "messages": messages}
+            # JSON mode guarantees the answer parses; it does not enforce the
+            # schema's required fields (that's what the repair pass below is
+            # for). The "json" token the API requires in the input is already
+            # in schema_hint. Verified against gpt-4o-mini that this does not
+            # stop the model from calling tools.
+            kwargs: Dict[str, Any] = {
+                "model": self.model,
+                "messages": messages,
+                "response_format": {"type": "json_object"},
+            }
             if self.tools:
                 kwargs["tools"] = self.tools
                 kwargs["tool_choice"] = "auto"
@@ -297,22 +313,28 @@ class BaseAgent:
                 return self._parse_final_answer(content, response_model)
             except AgentError as exc:
                 # A model occasionally drops a required field or wraps its JSON
-                # in prose. That is recoverable, so it gets exactly one chance
-                # to restate the SAME findings in the right shape - it is told
-                # what was wrong with the format, never what to answer. A
-                # second failure is a real failure and propagates unchanged, so
-                # persistent breakage is never hidden.
-                if repair_attempted:
+                # in prose. That is recoverable, so it gets a bounded number of
+                # chances to restate the SAME findings in the right shape - it
+                # is told what was wrong with the format, never what to answer.
+                # Raising instead would throw away every tool result gathered
+                # in this conversation and, for the orchestrator, the whole
+                # pipeline run. Exhausting the budget propagates the error
+                # unchanged, so persistent breakage is never hidden.
+                if trace["schema_repairs"] >= config.MAX_SCHEMA_REPAIRS:
                     raise
-                repair_attempted = True
+                trace["schema_repairs"] += 1
                 emit(
                     logger,
                     "output_repair",
                     logging.WARNING,
                     agent=self.name,
+                    model=self.model,
                     response_model=response_model.__name__,
-                    error=str(exc)[:300],
+                    attempt=trace["schema_repairs"],
+                    error=str(exc)[:_ERROR_PREVIEW_CHARS],
                 )
+                # The failed answer stays in the transcript so the model can
+                # correct its own text rather than start over.
                 messages.append({"role": "assistant", "content": content})
                 messages.append(
                     {
@@ -327,7 +349,6 @@ class BaseAgent:
                     }
                 )
                 continue
-
         raise AgentError(f"{self.name} exceeded max_tool_iterations ({max_tool_iterations}) without a final answer")
 
     def _parse_final_answer(
@@ -342,7 +363,10 @@ class BaseAgent:
         try:
             return response_model.model_validate(data)
         except ValidationError as exc:
+            # Name the offending fields: the repair prompt quotes this message
+            # back to the model, and the whole pydantic dump would quote its
+            # own input at it instead of saying what to fix.
             raise AgentError(
                 f"{self.name} produced output that does not match "
-                f"{response_model.__name__}: {exc}"
+                f"{response_model.__name__}:\n{_describe_validation_error(exc)}"
             ) from exc
