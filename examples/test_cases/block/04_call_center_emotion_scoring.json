@@ -1,0 +1,9 @@
+{
+  "name": "Call Centre Agent Emotion and Attitude Scoring",
+  "description": "Webcams and microphones on call-centre agents' desks feed an emotion-recognition model that scores each agent's 'attitude' (smiles, tone, stress) every minute. The scores automatically feed monthly bonus calculations and a list of agents flagged for dismissal review.",
+  "owner": "contact-centre-operations",
+  "data_classification": "confidential",
+  "deployment_context": "internal-tool",
+  "autonomy_level": "fully-autonomous",
+  "documentation": "DATA: continuous webcam video of agents' faces, voice recordings, derived emotion and stress scores.\nTRANSPARENCY: agents were not informed that their faces are analysed; the camera was introduced as 'for security'.\nDECISION: scores directly and automatically change bonuses; bottom 5% are auto-listed for dismissal review.\nSCIENTIFIC VALIDITY: no validation that facial expressions reflect performance; model not tested on Arabic-speaking or veiled employees.\nVENDOR: foreign emotion-AI vendor; video processed abroad; no DPA.\nOVERSIGHT: no appeal; supervisors cannot override scores.\nRETENTION: video kept indefinitely."
+}

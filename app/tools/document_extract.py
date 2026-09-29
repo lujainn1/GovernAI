@@ -17,6 +17,8 @@ from typing import Optional
 
 import openpyxl
 from docx import Document
+from docx.oxml.ns import qn
+from docx.table import Table as DocxTable
 from pptx import Presentation
 from pypdf import PdfReader
 
@@ -72,8 +74,34 @@ def _extract_docx(content: bytes) -> ExtractionResult:
     from io import BytesIO
 
     doc = Document(BytesIO(content))
-    text = "\n".join(p.text for p in doc.paragraphs if p.text.strip())
+    chunks = []
+    # Walk the body in document order so tables (data inventories, risk
+    # registers - often the most important part of a DPIA) are extracted
+    # alongside paragraphs instead of being silently dropped.
+    for block in doc.element.body.iterchildren():
+        tag = block.tag.rsplit("}", 1)[-1]
+        if tag == "p":
+            text = "".join(t.text or "" for t in block.iter(qn("w:t"))).strip()
+            if text:
+                chunks.append(text)
+        elif tag == "tbl":
+            chunks.extend(_docx_table_rows(DocxTable(block, doc)))
+    text = "\n".join(chunks)
     return ExtractionResult(text=text, word_count=len(text.split()))
+
+
+def _docx_table_rows(table) -> list:
+    rows = []
+    for row in table.rows:
+        cells = []
+        for cell in row.cells:
+            cell_text = cell.text.strip()
+            # Merged cells repeat the same object across columns; keep one.
+            if cell_text and (not cells or cells[-1] != cell_text):
+                cells.append(cell_text)
+        if cells:
+            rows.append(" | ".join(cells))
+    return rows
 
 
 def _extract_pptx(content: bytes) -> ExtractionResult:
@@ -85,6 +113,11 @@ def _extract_pptx(content: bytes) -> ExtractionResult:
         for shape in slide.shapes:
             if shape.has_text_frame and shape.text_frame.text.strip():
                 chunks.append(shape.text_frame.text.strip())
+            elif getattr(shape, "has_table", False) and shape.has_table:
+                for row in shape.table.rows:
+                    cells = [c.text.strip() for c in row.cells if c.text.strip()]
+                    if cells:
+                        chunks.append(" | ".join(cells))
     text = "\n".join(chunks)
     return ExtractionResult(text=text, word_count=len(text.split()), pages=len(prs.slides))
 

@@ -1,0 +1,9 @@
+{
+  "name": "AI Celebrity Spokesperson Ad Campaign",
+  "description": "A real-estate developer's marketing team plans to use a generative-AI video and voice-cloning tool to produce advertisements in which a well-known Saudi actor appears to personally recommend a new residential project. The videos will be sent by automated WhatsApp broadcast to a purchased list of 250,000 phone numbers and posted on social media.",
+  "owner": "marketing-department",
+  "data_classification": "confidential",
+  "deployment_context": "customer-facing",
+  "autonomy_level": "fully-autonomous",
+  "documentation": "SYNTHETIC MEDIA: the actor's face and voice are cloned from public interviews and TV clips using a third-party SaaS tool hosted outside the Kingdom. The actor has NOT given written consent; the agency says a verbal agreement is 'in progress'. The videos are not labelled as AI-generated and there is no watermark.\nCONTENT: the synthetic actor states the project is 'guaranteed to double in value within 3 years'.\nAUDIENCE DATA: 250,000 mobile numbers purchased from a data broker; the source and consent basis of the list are unknown. The WhatsApp broadcast is fully automated with no opt-out message.\nPERSONALISATION: the tool also generates personalised versions that greet each recipient by name, using names from the purchased list.\nVENDOR: no data processing agreement with the video tool vendor; vendor terms allow it to reuse uploaded content to train its models.\nREVIEW: no legal or compliance review has been done; launch planned in two weeks."
+}

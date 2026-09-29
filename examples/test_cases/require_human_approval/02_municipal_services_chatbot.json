@@ -1,0 +1,9 @@
+{
+  "name": "Al-Waha Municipality Citizen Services Chatbot",
+  "description": "A public Arabic/English generative-AI chatbot on the website of a fictional Saudi municipality (Al-Waha). It answers citizens' questions about building permits, commercial licences, fees and required documents using retrieval (RAG) over the municipality's published regulations, and can look up the status of an application by request number. It cannot approve, reject or change any application.",
+  "owner": "municipal-digital-services",
+  "data_classification": "internal",
+  "deployment_context": "customer-facing",
+  "autonomy_level": "human-on-the-loop",
+  "documentation": "KNOWLEDGE SOURCE: only the municipality's published regulations and fee schedules (public documents), re-indexed weekly. Answers cite the source regulation.\nPERSONAL DATA: the only personal input is an optional application request number used to show status; no names or ID numbers are requested. Chat transcripts are retained 90 days for quality review then deleted.\nHOSTING: model and vector database hosted in a cloud region inside Saudi Arabia.\nTRANSPARENCY: the chat window states 'You are chatting with an AI assistant. Answers are for guidance; the official decision is made by the municipality.'\nHUMAN HANDOFF: a 'Talk to an employee' button creates a ticket for the call centre; the bot hands off automatically when confidence is low or the user is dissatisfied.\nSECURITY: TLS in transit, encryption at rest, rate limiting, and a content filter for abusive input.\nGAPS: hallucination testing was done on only 150 questions (accuracy 91%); no ongoing monitoring dashboard for answer quality after launch yet; accessibility (screen-reader) testing not yet done; prompt-injection testing is planned but not completed."
+}

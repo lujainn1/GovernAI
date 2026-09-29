@@ -1,0 +1,9 @@
+{
+  "name": "Warehouse Demand Forecasting Model",
+  "description": "A machine-learning model that forecasts weekly demand per product (SKU) per warehouse to help planners set reorder quantities. Planners review and adjust the forecast before any purchase order is created.",
+  "owner": "supply-chain-planning",
+  "data_classification": "internal",
+  "deployment_context": "internal-tool",
+  "autonomy_level": "human-in-the-loop",
+  "documentation": "DATA: aggregated historical sales per SKU per warehouse, promotions calendar, public holidays (Ramadan, Eid, national day). No customer or employee personal data.\nMODEL: gradient-boosted trees trained in-house; hosted on the company's in-Kingdom cloud tenant.\nHUMAN OVERSIGHT: forecasts are suggestions in the planning dashboard; purchase orders are created and approved by planners under existing approval limits.\nACCURACY: back-tested on 24 months (MAPE 11%); monthly accuracy report; retraining monthly with drift alert if MAPE exceeds 18%.\nACCESS: planners and supply-chain managers only via RBAC.\nLOGGING: model versions and forecast runs logged."
+}

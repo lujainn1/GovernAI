@@ -1,0 +1,9 @@
+{
+  "name": "Supplier Invoice OCR and Coding Assistant",
+  "description": "Extracts supplier name, VAT number, amounts and line items from incoming supplier invoices (PDF, scanned Arabic/English) and suggests the general-ledger code. An accounts-payable clerk validates every invoice before it enters the ERP; payment approval follows existing finance controls.",
+  "owner": "finance-accounts-payable",
+  "data_classification": "confidential",
+  "deployment_context": "internal-tool",
+  "autonomy_level": "human-in-the-loop",
+  "documentation": "DATA: supplier company invoices; business data only (company names, commercial registration and VAT numbers). No individual customer data.\nHOSTING: OCR and model hosted in-Kingdom; DPA signed.\nHUMAN OVERSIGHT: the clerk confirms or corrects every extracted field; the tool cannot post to the ERP or release payments.\nACCURACY: 97% field accuracy on 2,000 historical invoices; low-confidence fields highlighted in red.\nACCESS: AP team only via RBAC; segregation of duties unchanged.\nLOGGING: extracted values, corrections and user are logged for audit; ZATCA e-invoicing checks unchanged."
+}

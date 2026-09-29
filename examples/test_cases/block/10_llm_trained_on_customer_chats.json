@@ -1,0 +1,9 @@
+{
+  "name": "Commercial LLM Trained on Customer Support Chats",
+  "description": "A company plans to fine-tune a large language model on 3 million WhatsApp customer-support conversations and sell API access to the model to other companies as a 'Saudi customer-service AI'.",
+  "owner": "data-monetisation",
+  "data_classification": "restricted",
+  "deployment_context": "customer-facing",
+  "autonomy_level": "fully-autonomous",
+  "documentation": "DATA: full chat logs including names, phone numbers, national ID and Iqama numbers, addresses, payment issues and health complaints customers mentioned.\nCONSENT: customers were never told their chats would be used to train or sell a model; the privacy policy only mentions 'service improvement'.\nDE-IDENTIFICATION: none; the model has been observed reproducing phone numbers and ID numbers from training data.\nHOSTING: training and hosting abroad; no transfer assessment; no DPA.\nCOMMERCIAL USE: model access will be sold to unrelated third parties.\nRIGHTS: no mechanism to remove a customer's data from the model on request."
+}

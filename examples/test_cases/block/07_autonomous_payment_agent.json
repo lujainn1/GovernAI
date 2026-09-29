@@ -1,0 +1,9 @@
+{
+  "name": "Autonomous Accounts Payable AI Agent",
+  "description": "An LLM-based agent with administrator credentials to the ERP and the corporate online-banking portal reads supplier emails, creates new suppliers, changes bank account details and releases payments automatically without human approval.",
+  "owner": "finance-automation",
+  "data_classification": "restricted",
+  "deployment_context": "autonomous-agent",
+  "autonomy_level": "fully-autonomous",
+  "documentation": "PERMISSIONS: full admin role in the ERP and payment-release rights in online banking; credentials stored in the agent's prompt configuration.\nLIMITS: no payment amount limit, no dual approval, no whitelist of suppliers.\nINPUT: acts on instructions in incoming emails, including requests to change supplier bank details.\nSECURITY: no prompt-injection or business-email-compromise testing; no anomaly detection.\nLOGGING: agent actions are not logged separately; ERP shows the actions under a generic admin user.\nOVERSIGHT: finance reviews payments only at month-end reconciliation."
+}

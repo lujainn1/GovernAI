@@ -1,0 +1,9 @@
+{
+  "name": "Arabic-English Press Release Translation Assistant",
+  "description": "Translates approved Arabic press releases and public announcements into English (and vice versa) as a first draft for the communications team. A certified human translator edits and approves every text before publication.",
+  "owner": "corporate-communications",
+  "data_classification": "public",
+  "deployment_context": "internal-tool",
+  "autonomy_level": "human-in-the-loop",
+  "documentation": "INPUT: only content already approved for public release; no personal data beyond names of spokespeople already public.\nHOSTING: enterprise translation model under a signed DPA with zero data retention.\nHUMAN OVERSIGHT: nothing is published automatically; a certified translator edits and signs off every translation in the CMS.\nQUALITY: glossary of 800 approved terms enforced; quarterly quality review of 30 samples.\nLOGGING: drafts and final versions are versioned in the CMS with editor name.\nIP: only company-owned content is translated."
+}

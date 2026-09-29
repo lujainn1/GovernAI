@@ -1,0 +1,9 @@
+{
+  "name": "Card Fraud Detection and Transaction Hold",
+  "description": "A machine-learning model at a fictional Saudi retail bank scores every card transaction in real time. Transactions above a fraud-score threshold are automatically held and the customer receives an SMS; a fraud analyst reviews each hold within 2 hours and releases or blocks the card.",
+  "owner": "fraud-risk-analytics",
+  "data_classification": "restricted",
+  "deployment_context": "customer-facing",
+  "autonomy_level": "human-on-the-loop",
+  "documentation": "DATA: transaction amount, merchant, location, device, customer transaction history, account age, nationality and age band.\nHOSTING: in-Kingdom data centre; encryption at rest and in transit; RBAC for fraud analysts.\nOVERSIGHT: every hold is reviewed by an analyst within 2 hours (SLA met 96% of the time); customers can call to release immediately.\nPERFORMANCE: 0.4% of transactions held; 70% of holds turn out to be legitimate customers.\nGAPS: fairness testing has not been performed across nationality and age bands although both are model features; customers are told the transaction is held 'for security' but not that an AI model triggered it; no formal explanation is recorded for why a transaction was held; drift monitoring is monthly and manual.\nLOGGING: every score and analyst decision is logged 5 years."
+}
