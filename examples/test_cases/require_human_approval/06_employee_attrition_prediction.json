@@ -1,0 +1,9 @@
+{
+  "name": "Employee Attrition Risk Prediction",
+  "description": "A model predicts which employees are likely to resign in the next 6 months so HR business partners can plan retention actions (career conversations, training). Scores are visible to HR business partners only, not to line managers, and must not be used for performance, promotion or termination decisions.",
+  "owner": "people-analytics",
+  "data_classification": "confidential",
+  "deployment_context": "internal-tool",
+  "autonomy_level": "human-in-the-loop",
+  "documentation": "DATA: tenure, role, grade, salary band, last promotion date, performance rating, leave days, training hours, commute distance.\nACCESS: HR business partners only; scores hidden from line managers; written usage policy prohibits using scores for adverse decisions.\nHOSTING: in-Kingdom HR platform; encryption; audit log of who viewed scores.\nTRANSPARENCY: employees were informed via an internal notice that HR analytics is used for retention planning.\nGAPS: DPIA drafted but not approved by the DPO; no fairness test by gender or nationality; commute distance may act as a proxy for neighbourhood; no technical control prevents a partner from sharing scores with managers.\nRETENTION: scores kept 12 months."
+}

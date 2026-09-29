@@ -1,0 +1,9 @@
+{
+  "name": "Developer Code Review Assistant",
+  "description": "An AI assistant that comments on pull requests with possible bugs, security issues and style problems. Developers decide whether to accept suggestions; the assistant cannot merge or deploy code.",
+  "owner": "engineering-platform",
+  "data_classification": "confidential",
+  "deployment_context": "internal-tool",
+  "autonomy_level": "human-in-the-loop",
+  "documentation": "DATA: source code of internal repositories only; a secrets scanner blocks any file containing keys or credentials before it is sent.\nVENDOR: enterprise tier of the AI coding service with a signed DPA; vendor does not retain or train on our code; SOC 2 report reviewed by security.\nPERMISSIONS: read access to pull requests and comment permission only; cannot push, merge or trigger pipelines.\nOVERSIGHT: all merges still require approval by a human reviewer under branch protection rules.\nIP: legal reviewed licensing of generated suggestions.\nMONITORING: monthly review of accepted vs rejected suggestions; security team audits comments on high-risk repositories.\nLOGGING: every request logged with repository and user."
+}

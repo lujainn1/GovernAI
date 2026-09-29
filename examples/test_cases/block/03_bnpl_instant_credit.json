@@ -1,0 +1,9 @@
+{
+  "name": "Buy-Now-Pay-Later Instant Credit Decision Engine",
+  "description": "A fictional BNPL fintech uses an AI model to instantly approve or reject credit of up to SAR 10,000 at checkout and set each customer's credit limit. Rejections are final and are made without any human review.",
+  "owner": "fintech-lending",
+  "data_classification": "restricted",
+  "deployment_context": "customer-facing",
+  "autonomy_level": "fully-autonomous",
+  "documentation": "DATA: national ID, age, gender, nationality, city, phone contacts count, device type, social media login data, credit bureau report.\nDECISION: fully automated approve/reject and credit limit; no human review and no appeal process; rejected customers see only 'not eligible'.\nMODEL: third-party scoring model hosted outside the Kingdom; no cross-border transfer assessment; vendor DPA not signed.\nBIAS: no fairness testing; age, gender and nationality are direct model inputs; phone-contacts count used as a feature.\nCONSENT: consent is bundled into the general terms and conditions.\nMONITORING: none after launch.\nLOGGING: only final decisions are stored, not the inputs or model version."
+}

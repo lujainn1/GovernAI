@@ -1,0 +1,9 @@
+{
+  "name": "Predictive Maintenance for Water Pumping Stations",
+  "description": "A model that analyses vibration, temperature and pressure sensor data from pumps at a fictional regional water utility to predict failures up to 14 days ahead and suggest maintenance work orders. Maintenance engineers review each suggestion before scheduling work. The model has no control over the pumps.",
+  "owner": "operations-engineering",
+  "data_classification": "internal",
+  "deployment_context": "internal-tool",
+  "autonomy_level": "human-in-the-loop",
+  "documentation": "DATA: industrial sensor readings only; no personal data.\nCONTROL: the model is read-only and isolated from the SCADA control network (one-way data diode).\nHUMAN OVERSIGHT: engineers accept, modify or reject each suggested work order.\nACCURACY: validated on 3 years of failure history (recall 87%, precision 78%); false negatives covered by existing scheduled maintenance.\nSECURITY: OT security team approved the architecture; hosted on-premises.\nMONITORING: quarterly model performance review; drift alerts.\nLOGGING: predictions and engineer decisions logged."
+}

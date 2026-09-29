@@ -1,0 +1,9 @@
+{
+  "name": "Marketing Social Media Copy Draft Generator",
+  "description": "Generates first drafts of Arabic and English social-media captions and product descriptions for the marketing team. A content editor and the brand manager approve every post before it is published.",
+  "owner": "marketing-content",
+  "data_classification": "internal",
+  "deployment_context": "internal-tool",
+  "autonomy_level": "human-in-the-loop",
+  "documentation": "INPUT: product specifications and campaign briefs; no customer personal data.\nCONTENT RULES: the tool must not generate images or voices of real people, testimonials, or claims about prices or returns; a checklist enforces this at review.\nVENDOR: enterprise GenAI service with signed DPA and no training on our inputs.\nOVERSIGHT: two-step human approval (editor then brand manager) before publishing; no auto-posting integration.\nCOMPLIANCE: marketing claims reviewed against advertising rules; AI-assistance disclosed per company policy where required.\nLOGGING: drafts and approvals kept in the content calendar."
+}

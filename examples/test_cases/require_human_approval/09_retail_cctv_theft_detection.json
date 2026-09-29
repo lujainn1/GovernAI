@@ -1,0 +1,9 @@
+{
+  "name": "Retail Store CCTV Theft Behaviour Alerts",
+  "description": "Computer vision on existing CCTV in a fictional supermarket chain detects behaviours associated with shoplifting (concealing items, bypassing checkout) and sends an alert clip to the store security officer, who decides whether to act. No facial recognition or identification is performed.",
+  "owner": "loss-prevention",
+  "data_classification": "confidential",
+  "deployment_context": "customer-facing",
+  "autonomy_level": "human-in-the-loop",
+  "documentation": "DATA: live CCTV video; alert clips stored 30 days, other footage per existing CCTV retention.\nNO IDENTIFICATION: the system does not use facial recognition, does not build profiles and does not share data with third parties.\nSIGNAGE: stores display notices that CCTV with video analytics is in use.\nOVERSIGHT: security officers review every alert; policy forbids stopping a customer based on an alert alone without officer observation.\nGAPS: pilot false-positive rate is 8%; no analysis of whether alerts disproportionately target certain groups (e.g. by dress or ethnicity); security officers received only a 1-hour briefing; no written escalation procedure for wrongful stops.\nHOSTING: on-premises edge devices; encrypted storage."
+}

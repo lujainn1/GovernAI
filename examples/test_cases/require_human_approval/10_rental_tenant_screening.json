@@ -1,0 +1,9 @@
+{
+  "name": "Rental Tenant Screening Score",
+  "description": "On a fictional property rental platform, the model produces a 'tenant reliability score' for apartment applicants based on credit report, declared income and rental payment history on the platform. Landlords see the score and decide whether to accept the applicant.",
+  "owner": "proptech-product",
+  "data_classification": "confidential",
+  "deployment_context": "customer-facing",
+  "autonomy_level": "human-in-the-loop",
+  "documentation": "DATA: name, national ID/Iqama, credit bureau report (with applicant consent), salary certificate, previous rental payment history on the platform.\nCONSENT: applicants explicitly consent to the credit check in the app.\nOVERSIGHT: the landlord makes the decision; the platform does not auto-reject.\nGAPS: applicants cannot see their score or the reasons; no dispute/correction process for wrong payment history; no fairness test by nationality although many applicants are expatriates; landlords commonly reject every applicant below 60 without further review.\nHOSTING: in-Kingdom; encryption; RBAC.\nRETENTION: scores kept 24 months."
+}

@@ -1,0 +1,9 @@
+{
+  "name": "Office Building HVAC Energy Optimisation",
+  "description": "An AI controller that adjusts air-conditioning set-points in company office buildings based on occupancy counts, weather forecast and electricity tariffs to reduce energy use, within safe limits set by facilities engineers.",
+  "owner": "facilities-management",
+  "data_classification": "internal",
+  "deployment_context": "internal-tool",
+  "autonomy_level": "human-on-the-loop",
+  "documentation": "DATA: temperature, humidity, anonymous occupancy counts from door sensors (no cameras, no badge identities), weather and tariff data.\nSAFETY LIMITS: set-points bounded between 22 and 26 C by hard-coded rules the model cannot override.\nOVERSIGHT: facilities engineers can override any zone from the BMS; automatic fallback to the standard schedule if the model fails.\nRESULTS: 6-month pilot on one building saved 14% energy with no increase in comfort complaints.\nSECURITY: runs on the isolated building-management network; vendor access via approved remote-access process.\nMONITORING: weekly energy and comfort report; all set-point changes logged."
+}

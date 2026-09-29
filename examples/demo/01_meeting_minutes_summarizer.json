@@ -1,9 +1,0 @@
-{
-  "name": "Internal Meeting Minutes Summarizer",
-  "description": "An internal tool that takes Arabic or English meeting notes typed by employees and produces a short summary and an action-item list. The employee reviews and edits the draft before sharing it. It does not make or influence any decision about a person.",
-  "owner": "pmo-office",
-  "data_classification": "internal",
-  "deployment_context": "internal-tool",
-  "autonomy_level": "human-in-the-loop",
-  "documentation": "INPUT: meeting notes only. Employees are instructed not to paste personal data, and an input filter redacts phone numbers, emails and ID numbers before the text reaches the model.\nHOSTING: the model runs in a cloud region inside Saudi Arabia under a signed data processing agreement; no data leaves the Kingdom.\nHUMAN OVERSIGHT: summaries are never sent automatically; the employee must review, edit and click Share.\nACCESS AND LOGGING: company SSO only; every request is logged with user and timestamp; logs retained 1 year.\nRETENTION: notes are discarded immediately after the summary is produced; summaries follow normal document retention.\nTRANSPARENCY: every output is labelled 'AI-generated draft - review before sharing'.\nQUALITY: the PMO reviews 50 random summaries every quarter for accuracy and omissions; prompt-injection tests passed before launch."
-}

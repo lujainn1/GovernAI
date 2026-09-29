@@ -1,0 +1,9 @@
+{
+  "name": "Motor Insurance Claims Triage and Fast-Track Approval",
+  "description": "An AI model at a fictional insurer reads motor claims (Najm accident report, photos of damage, repair quotes) and automatically approves simple claims under SAR 5,000. Claims above that amount, and any claim the model would reduce or deny, are routed to a human adjuster.",
+  "owner": "claims-operations",
+  "data_classification": "confidential",
+  "deployment_context": "customer-facing",
+  "autonomy_level": "human-on-the-loop",
+  "documentation": "DATA: policyholder name, national ID/Iqama, vehicle details, accident report, damage photos, workshop quotes.\nOVERSIGHT: the model can only approve; it can never deny or reduce a claim - those go to adjusters. About 35% of claims are auto-approved.\nHOSTING: in-Kingdom; DPA signed with the photo-damage-estimation vendor.\nGAPS: no fraud-pattern analysis of auto-approved claims yet; damage-estimation accuracy validated on only 400 claims; no documented drift monitoring; customers are not told that AI assessed their claim; complaint route exists but is not specific to AI decisions.\nLOGGING: all decisions and model versions logged."
+}

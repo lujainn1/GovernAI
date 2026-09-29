@@ -1,0 +1,9 @@
+{
+  "name": "Delivery Driver Automatic Deactivation",
+  "description": "On a fictional delivery app, an AI model combines customer ratings, delivery times, GPS traces and cancellation rates into a driver score and automatically and permanently deactivates the accounts of drivers who fall below the threshold, ending their income from the platform.",
+  "owner": "delivery-platform-operations",
+  "data_classification": "confidential",
+  "deployment_context": "autonomous-agent",
+  "autonomy_level": "fully-autonomous",
+  "documentation": "DATA: driver name, Iqama/ID, nationality, GPS location every 10 seconds (including off-shift), customer ratings and comments, earnings.\nDECISION: deactivation is automatic and permanent; drivers receive a generic message with no reason.\nOVERSIGHT: no human review and no appeal channel.\nBIAS: customer ratings are known to be lower for some nationalities; no fairness testing; traffic and restaurant delays are counted against drivers.\nPRIVACY: GPS tracking continues outside working hours; no retention period.\nLOGGING: the reasons for deactivation are not stored."
+}

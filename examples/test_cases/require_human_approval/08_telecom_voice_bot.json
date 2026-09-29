@@ -1,0 +1,9 @@
+{
+  "name": "Telecom Customer Service Voice Bot",
+  "description": "An Arabic/English voice bot at a fictional telecom operator that answers billing questions and can change a customer's mobile plan or add data bundles after verifying the caller by one-time password. Customers can ask for a human agent at any time.",
+  "owner": "customer-care-digital",
+  "data_classification": "confidential",
+  "deployment_context": "customer-facing",
+  "autonomy_level": "human-on-the-loop",
+  "documentation": "DATA: caller number, account details, billing history, plan information, call recordings.\nDISCLOSURE: the bot introduces itself as a virtual assistant at the start of every call.\nOVERSIGHT: plan changes are confirmed verbally and by SMS; changes can be reversed free within 24 hours; 'agent' keyword transfers to a human.\nVENDOR: speech-to-text runs with a vendor outside the Kingdom; DPA signed; the cross-border transfer risk assessment is in progress but not yet approved by the DPO.\nGAPS: no testing on elderly callers or strong regional dialects; no measurement of wrongful plan changes yet; prompt-injection/social-engineering testing not completed.\nLOGGING: recordings and transcripts kept 6 months."
+}

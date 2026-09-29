@@ -1,0 +1,9 @@
+{
+  "name": "Ambient Clinical Documentation Assistant",
+  "description": "Records doctor-patient consultations in outpatient clinics of a fictional private hospital and drafts the clinical note (history, examination, plan) in the electronic medical record. The physician must review, edit and sign every note; the assistant does not diagnose or prescribe.",
+  "owner": "hospital-clinical-informatics",
+  "data_classification": "restricted",
+  "deployment_context": "internal-tool",
+  "autonomy_level": "human-in-the-loop",
+  "documentation": "DATA: audio of consultations, transcripts and draft notes containing health information.\nHOSTING: speech and language models hosted in a cloud region inside Saudi Arabia; DPA signed; audio deleted after 7 days.\nOVERSIGHT: notes are drafts until the physician signs; physicians trained on reviewing AI drafts.\nACCURACY: pilot on 200 visits - 4% of drafts contained a clinically significant error that physicians caught and corrected.\nGAPS: patient consent is verbal and not recorded in the EMR; no specific evaluation for Arabic dialect consultations or paediatric visits; no process yet for patients to opt out in advance; ongoing monitoring of error rate after the pilot is not defined.\nSECURITY: encryption at rest and in transit; access logged."
+}

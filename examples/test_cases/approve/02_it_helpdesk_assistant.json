@@ -1,0 +1,9 @@
+{
+  "name": "IT Helpdesk Knowledge Assistant",
+  "description": "A retrieval-based assistant that answers employees' IT questions (VPN setup, password reset steps, printer configuration) from the company's approved IT knowledge base. It cannot execute any action on systems; it only returns instructions and links, and can open a ticket for a human technician.",
+  "owner": "it-service-desk",
+  "data_classification": "internal",
+  "deployment_context": "internal-tool",
+  "autonomy_level": "human-in-the-loop",
+  "documentation": "KNOWLEDGE SOURCE: 420 approved IT articles owned by the service desk, reviewed quarterly. Answers cite the article.\nPERSONAL DATA: none requested; employee identity comes from SSO and is only used to open a ticket.\nHOSTING: model and vector index hosted in-Kingdom under a signed DPA; vendor contractually cannot train on company data.\nPERMISSIONS: read-only access to the knowledge base; no access to Active Directory, email or production systems.\nOVERSIGHT: 'Talk to a technician' button on every answer; automatic handoff when retrieval confidence is low.\nTESTING: evaluated on 300 real historical tickets (94% correct, 0 unsafe instructions); prompt-injection red-team completed.\nMONITORING: weekly dashboard of thumbs-down answers reviewed by the service-desk lead.\nLOGGING: all conversations logged 6 months for quality review.\nDISCLOSURE: UI clearly states it is an AI assistant."
+}
