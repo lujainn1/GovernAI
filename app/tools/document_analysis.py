@@ -18,7 +18,36 @@ SENSITIVE_KEYWORDS = [
     "genetic", "ssn", "social security", "passport", "credit score", "bank account",
     "children", "minor", "race", "ethnicity", "religion", "sexual orientation",
     "criminal record", "immigration status", "union membership", "political affiliation",
+    # Identity/demographic fields common in Saudi use cases (PDPL sensitive data
+    # and typical bias proxies).
+    "national id", "iqama", "nationality", "gender", "date of birth", "personal photo",
+    "salary", "voiceprint", "voice print", "geolocation", "patient",
 ]
+
+# Arabic equivalents. Matched against Arabic-normalized text (alef/yaa/taa
+# marbuta variants and diacritics folded) so spelling variants still hit.
+SENSITIVE_KEYWORDS_AR = [
+    "الصحية", "السجل الصحي", "الحالة الصحية", "الطبي", "الطبية", "تشخيص", "المريض",
+    "بيانات المرضى", "بيومتري", "بصمة", "التعرف على الوجه", "بصمة الصوت", "الجيني",
+    "الجينية", "الجينات", "رقم الهوية", "الهوية الوطنية", "الاقامة", "رقم الاقامة",
+    "جواز السفر", "الجنسية", "الجنس", "تاريخ الميلاد", "العمر", "الصورة الشخصية",
+    "الاطفال", "القاصرين", "الديانة", "المذهب", "العرق", "الاصل العرقي",
+    "السجل الجنائي", "السوابق", "الحساب البنكي", "الراتب", "السجل الائتماني",
+    "الجدارة الائتمانية", "الموقع الجغرافي", "الانتماء السياسي",
+]
+
+# Saudi national ID (starts with 1) / Iqama (starts with 2): 10 digits.
+SAUDI_ID_RE = re.compile(r"(?<!\d)[12]\d{9}(?!\d)")
+
+_AR_DIACRITICS = re.compile(r"[\u064B-\u0652\u0640]")
+
+
+def _normalize_arabic(text: str) -> str:
+    text = _AR_DIACRITICS.sub("", text)
+    return (
+        text.replace("أ", "ا").replace("إ", "ا").replace("آ", "ا")
+        .replace("ى", "ي").replace("ة", "ه")
+    )
 
 
 def analyze_document(text: str) -> Dict[str, Any]:
@@ -29,7 +58,11 @@ def analyze_document(text: str) -> Dict[str, Any]:
     """
     text = text or ""
     lower = text.lower()
-    found_keywords: List[str] = sorted({kw for kw in SENSITIVE_KEYWORDS if kw in lower})
+    normalized_ar = _normalize_arabic(text)
+    found_keywords: List[str] = sorted(
+        {kw for kw in SENSITIVE_KEYWORDS if kw in lower}
+        | {kw for kw in SENSITIVE_KEYWORDS_AR if _normalize_arabic(kw) in normalized_ar}
+    )
 
     return {
         "word_count": len(text.split()),
@@ -37,9 +70,11 @@ def analyze_document(text: str) -> Dict[str, Any]:
         "ssn_like_patterns_found": len(SSN_RE.findall(text)),
         "credit_card_like_patterns_found": len(CREDIT_CARD_RE.findall(text)),
         "phone_like_patterns_found": len(PHONE_RE.findall(text)),
+        "saudi_id_like_patterns_found": len(SAUDI_ID_RE.findall(text)),
         "sensitive_keywords_found": found_keywords,
         "contains_pii_indicators": bool(
             EMAIL_RE.search(text) or SSN_RE.search(text) or CREDIT_CARD_RE.search(text)
+            or SAUDI_ID_RE.search(text)
         ),
     }
 
@@ -51,8 +86,9 @@ ANALYZE_DOCUMENT_SCHEMA = {
         "description": (
             "Run deterministic pattern analysis over a block of free text "
             "(e.g. use-case documentation) to detect PII indicators (emails, "
-            "SSNs, credit-card-like numbers, phone numbers) and sensitive-topic "
-            "keywords (health, biometric, children, etc.)."
+            "SSNs, Saudi national ID / Iqama numbers, credit-card-like numbers, "
+            "phone numbers) and sensitive-topic keywords in English and Arabic "
+            "(health, biometric, children, nationality, gender, etc.)."
         ),
         "parameters": {
             "type": "object",

@@ -64,3 +64,26 @@ def test_audit_log_round_trip():
     uc1_entries = get_audit_log("uc-1")
     assert len(uc1_entries) == 1
     assert uc1_entries[0]["data"]["foo"] == "bar"
+
+
+def test_analyze_document_detects_saudi_identity_fields_in_english():
+    text = "We collect the applicant's nationality, gender, date of birth and Iqama number."
+    result = analyze_document(text)
+    for kw in ("nationality", "gender", "date of birth", "iqama"):
+        assert kw in result["sensitive_keywords_found"]
+
+
+def test_analyze_document_detects_arabic_sensitive_keywords_and_saudi_id():
+    text = "يتم جمع الجنسية وتاريخ الميلاد والحالة الصحية ورقم الهوية 1012345678."
+    result = analyze_document(text)
+    assert {"الجنسية", "تاريخ الميلاد", "الحالة الصحية", "رقم الهوية"} <= set(
+        result["sensitive_keywords_found"]
+    )
+    assert result["saudi_id_like_patterns_found"] == 1
+    assert result["contains_pii_indicators"] is True
+
+
+def test_analyze_document_arabic_keywords_avoid_common_false_positives():
+    # "sahih" (correct), "tatbiq" (application), "mardiya" (satisfactory)
+    result = analyze_document("هذا صحيح والتطبيق يعمل بنتائج مرضية")
+    assert result["sensitive_keywords_found"] == []
